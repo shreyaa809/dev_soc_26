@@ -1,0 +1,13 @@
+# Ignore backend & ML
+signsos-api/
+pyth_files/
+gesture_model.pkl
+server.py
+requirements.txt
+.venv/
+__pycache__/
+audio_cache/
+
+# Ignore Python files
+*.py
+*.pkl
