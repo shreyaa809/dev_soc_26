@@ -2,8 +2,8 @@
   "name": "SignSOS - Emergency Sign Language",
   "short_name": "SignSOS",
   "description": "Emergency calling through sign language detection for deaf and speech-impaired users",
-  "start_url": "/devsoc_26/index.html",
-  "scope": "/devsoc_26/",
+  "start_url": "/dev_soc_26/index.html",
+  "scope": "/dev_soc_26/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#020617",
@@ -27,7 +27,7 @@
     {
       "name": "Emergency Call",
       "short_name": "SOS",
-      "url": "/devsoc_26/index.html"
+      "url": "/dev_soc_26/index.html"
     }
   ]
 }
