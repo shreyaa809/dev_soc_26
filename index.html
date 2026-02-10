@@ -1185,55 +1185,34 @@
     }
 
     // ========== GESTURE CLASSIFICATION ==========
-    // Uses MediaPipe landmarks to detect finger states for LOCAL gesture detection
-    // This runs as FALLBACK when ML API returns wrong results or is offline
-
     function getFingerStates(landmarks) {
-      // Finger tip and pip indices
-      const tips = [4, 8, 12, 16, 20];  // thumb, index, middle, ring, pinky
+      const tips = [4, 8, 12, 16, 20];
       const pips = [3, 6, 10, 14, 18];
-      
       const fingers = [];
-      
-      // Thumb: compare x position (special case)
       const thumbTip = landmarks[4];
       const thumbIP = landmarks[3];
       const thumbMCP = landmarks[2];
       const wrist = landmarks[0];
-      
-      // Determine hand orientation
       const isRightHand = landmarks[5].x < landmarks[17].x;
-      
       if (isRightHand) {
         fingers.push(thumbTip.x < thumbIP.x ? 1 : 0);
       } else {
         fingers.push(thumbTip.x > thumbIP.x ? 1 : 0);
       }
-      
-      // Other fingers: tip.y < pip.y means extended (y is inverted in screen coords)
       for (let i = 1; i < 5; i++) {
         fingers.push(landmarks[tips[i]].y < landmarks[pips[i]].y ? 1 : 0);
       }
-      
-      return fingers; // [thumb, index, middle, ring, pinky]
+      return fingers;
     }
 
     function getFingerDistances(landmarks) {
-      const wrist = landmarks[0];
       const distances = {};
-      
-      // Distance between fingertips
       distances.thumbIndex = Math.hypot(landmarks[4].x - landmarks[8].x, landmarks[4].y - landmarks[8].y);
       distances.thumbMiddle = Math.hypot(landmarks[4].x - landmarks[12].x, landmarks[4].y - landmarks[12].y);
       distances.indexMiddle = Math.hypot(landmarks[8].x - landmarks[12].x, landmarks[8].y - landmarks[12].y);
       distances.thumbPinky = Math.hypot(landmarks[4].x - landmarks[20].x, landmarks[4].y - landmarks[20].y);
-      
-      // Palm size for normalization
       distances.palmSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
-      
-      // Wrist to middle finger tip (hand openness)
       distances.handOpen = Math.hypot(landmarks[0].x - landmarks[12].x, landmarks[0].y - landmarks[12].y);
-      
       return distances;
     }
 
@@ -1242,93 +1221,33 @@
       const [thumb, index, middle, ring, pinky] = fingers;
       const dist = getFingerDistances(landmarks);
       const norm = dist.palmSize > 0 ? dist.palmSize : 0.1;
-      
-      // ===== FIST (all fingers closed) → HELP =====
       if (thumb === 0 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
-        return "HELP";
-      }
-      
-      // ===== ALL FINGERS OPEN (open palm) → STOP =====
-      if (thumb === 1 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
-        // Check if palm is facing camera (fingers spread)
-        if (dist.thumbPinky / norm > 0.8) {
-          return "STOP";
-        }
-        return "STOP";
-      }
-      
-      // ===== OK SIGN (thumb + index form circle, others extended) =====
-      if (dist.thumbIndex / norm < 0.25 && middle === 1 && ring === 1 && pinky === 1) {
-        return "OK";
-      }
-      
-      // ===== THUMBS UP (only thumb up) → YES =====
-      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
-        // Check thumb is pointing up
-        if (landmarks[4].y < landmarks[3].y && landmarks[3].y < landmarks[2].y) {
-          return "YES";
-        }
-      }
-      
-      // ===== INDEX FINGER POINTING UP → CALL_POLICE =====
-      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 0) {
-        return "CALL_POLICE";
-      }
-      
-      // ===== PEACE / TWO FINGERS → TWO_PEOPLE_TRAPPED =====
-      if (thumb === 0 && index === 1 && middle === 1 && ring === 0 && pinky === 0) {
-        return "TWO_PEOPLE_TRAPPED";
-      }
-      
-      // ===== THREE FINGERS (index + middle + ring) → FIRE =====
-      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 0) {
-        return "FIRE";
-      }
-      
-      // ===== FOUR FINGERS (no thumb) → AMBULANCE =====
-      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
-        return "AMBULANCE";
-      }
-      
-      // ===== ROCK SIGN (index + pinky up) → WEAPON_THREAT =====
-      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 1) {
-        return "WEAPON_THREAT";
-      }
-      
-      // ===== ILY / SHAKA (thumb + index + pinky) → SOS =====
-      if (thumb === 1 && index === 1 && middle === 0 && ring === 0 && pinky === 1) {
-        return "SOS";
-      }
-      
-      // ===== THUMB + PINKY (call me sign) → HOSTAGE =====
-      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 1) {
-        return "HOSTAGE";
-      }
-      
-      // ===== CLOSED FIST WITH THUMB TUCKED → POSSIBLE_HOSTAGE =====
-      // (Signal for help - thumb tucked in fist, a known domestic violence signal)
-      if (thumb === 0 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
-        // Check if thumb is tucked inside fist
         if (landmarks[4].x > landmarks[6].x && landmarks[4].x < landmarks[18].x) {
           return "POSSIBLE_HOSTAGE";
         }
+        return "HELP";
       }
-      
-      // ===== FLAT HAND WAVING SIDE → NO =====
       if (thumb === 1 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
-        // Horizontal palm
         const palmAngle = Math.abs(landmarks[5].y - landmarks[17].y);
-        if (palmAngle < 0.05) {
-          return "NO";
-        }
+        if (palmAngle < 0.05) return "NO";
+        return "STOP";
       }
-      
+      if (dist.thumbIndex / norm < 0.25 && middle === 1 && ring === 1 && pinky === 1) return "OK";
+      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
+        if (landmarks[4].y < landmarks[3].y && landmarks[3].y < landmarks[2].y) return "YES";
+      }
+      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 0) return "CALL_POLICE";
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 0 && pinky === 0) return "TWO_PEOPLE_TRAPPED";
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 0) return "FIRE";
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 1) return "AMBULANCE";
+      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 1) return "WEAPON_THREAT";
+      if (thumb === 1 && index === 1 && middle === 0 && ring === 0 && pinky === 1) return "SOS";
+      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 1) return "HOSTAGE";
       return null;
     }
 
-    // ========== GESTURE DEFINITIONS (with categories) ==========
+    // ========== GESTURE DEFINITIONS ==========
     const aslGestures = {
-      // === EMERGENCY GESTURES (trigger calls) ===
       "CALL_POLICE":       { name: "Call Police",                service: "police",     icon: "🚨", isEmergency: true,  phrase: "I need police help immediately!" },
       "HOSTAGE":           { name: "Hostage Situation",          service: "police",     icon: "🚔", isEmergency: true,  phrase: "There is a hostage situation. Send help!" },
       "POSSIBLE_HOSTAGE":  { name: "Possible Hostage",          service: "police",     icon: "🚔", isEmergency: true,  phrase: "There might be a hostage situation here." },
@@ -1339,8 +1258,6 @@
       "AMBULANCE":         { name: "Medical Emergency",         service: "ambulance",  icon: "🚑", isEmergency: true,  phrase: "I need an ambulance! Medical emergency!" },
       "FIRE":              { name: "Fire Emergency",            service: "fire",       icon: "🔥", isEmergency: true,  phrase: "There is a fire! Send fire brigade!" },
       "TWO_PEOPLE_TRAPPED":{ name: "Two People Trapped",        service: "fire",       icon: "🔥", isEmergency: true,  phrase: "Two people are trapped! Send rescue!" },
-      
-      // === NON-EMERGENCY GESTURES (no call) ===
       "OK":        { name: "I'm Okay",              service: "none", icon: "👌", isEmergency: false, phrase: "I am okay. No help needed." },
       "YES":       { name: "Yes / Affirmative",     service: "none", icon: "✅", isEmergency: false, phrase: "Yes." },
       "NO":        { name: "No / Negative",         service: "none", icon: "❌", isEmergency: false, phrase: "No." },
@@ -1366,8 +1283,8 @@
     // ========== API - AUTO DETECT ==========
     const API_SERVERS = [
       "http://127.0.0.1:5000",
-      "https://dev-soc-26.onrender.com"
-      // "https://signsos-api.onrender.com/"
+      "https://dev-soc-26-1.onrender.com"
+      
     ];
 
     let API_URL = API_SERVERS[0];
@@ -1428,54 +1345,34 @@
       document.getElementById("universalNum").textContent = getEmergencyNumber("universal");
     }
 
-    // ========== SPEECH SYNTHESIS (AI VOICE) ==========
+    // ========== SPEECH SYNTHESIS ==========
     function speak(text) {
       if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        u.rate = 0.9;
-        u.pitch = 1.0;
-        u.volume = 1.0;
-        // Try to get a clear voice
+        u.rate = 0.9; u.pitch = 1.0; u.volume = 1.0;
         const voices = speechSynthesis.getVoices();
-        const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
-                            voices.find(v => v.lang.startsWith('en'));
+        const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
         if (englishVoice) u.voice = englishVoice;
         speechSynthesis.speak(u);
       }
     }
 
-    // ========== GENERATE VOICE MESSAGE AS AUDIO BLOB ==========
+    // ========== GENERATE VOICE BLOB ==========
     async function generateVoiceBlob(text) {
       return new Promise((resolve) => {
-        if (!('speechSynthesis' in window)) {
-          resolve(null);
-          return;
-        }
-        
-        // Use MediaRecorder to capture audio if possible
-        // Fallback: we'll send text message instead
+        if (!('speechSynthesis' in window)) { resolve(null); return; }
         try {
           const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 0.85;
-          utterance.pitch = 1.0;
-          
+          utterance.rate = 0.85; utterance.pitch = 1.0;
           const voices = speechSynthesis.getVoices();
-          const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
-                              voices.find(v => v.lang.startsWith('en'));
+          const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
           if (englishVoice) utterance.voice = englishVoice;
-          
-          // Speak it for the user to hear
           speechSynthesis.speak(utterance);
-          
           utterance.onend = () => resolve(text);
           utterance.onerror = () => resolve(text);
-          
-          // Timeout safety
           setTimeout(() => resolve(text), 10000);
-        } catch (e) {
-          resolve(text);
-        }
+        } catch (e) { resolve(text); }
       });
     }
 
@@ -1485,22 +1382,12 @@
       chip.className = `translation-chip ${gestureData.isEmergency ? 'emergency' : 'safe'}`;
       chip.textContent = `${gestureData.icon} ${gestureData.name}`;
       translationHistory.prepend(chip);
-      
-      // Keep only last 5 chips
-      while (translationHistory.children.length > 5) {
-        translationHistory.removeChild(translationHistory.lastChild);
-      }
-      
-      // Update main translation text
+      while (translationHistory.children.length > 5) translationHistory.removeChild(translationHistory.lastChild);
       translationText.textContent = `${gestureData.icon} "${gestureData.phrase}"`;
-      
-      // Add to voice message queue
       if (!translationQueue.includes(gestureData.phrase)) {
         translationQueue.push(gestureData.phrase);
         voiceMessageText = translationQueue.join(" ");
       }
-      
-      // Speak the translation
       speak(gestureData.phrase);
     }
 
@@ -1511,26 +1398,16 @@
       waCallStatus.textContent = "🔴 Connecting... • AI Voice translating signs";
       waCallBanner.classList.add("active");
       isCallActive = true;
-      
-      // Simulate call phases
-      setTimeout(() => {
-        if (isCallActive) waCallStatus.textContent = "🟢 Connected • Speaking: " + gesture.phrase.substring(0, 30) + "...";
-      }, 2000);
-      
-      setTimeout(() => {
-        if (isCallActive) waCallStatus.textContent = "🟢 AI Voice: Describing emergency to operator";
-      }, 5000);
+      setTimeout(() => { if (isCallActive) waCallStatus.textContent = "🟢 Connected • Speaking: " + gesture.phrase.substring(0, 30) + "..."; }, 2000);
+      setTimeout(() => { if (isCallActive) waCallStatus.textContent = "🟢 AI Voice: Describing emergency to operator"; }, 5000);
     }
 
     waCallEnd.addEventListener("click", () => {
       waCallBanner.classList.remove("active");
       isCallActive = false;
       statusText.textContent = "Call ended. Make another sign if needed.";
-      confirmedGesture = "";
-      currentGesture = "";
-      currentEmergencyData = null;
-      callBtn.disabled = true;
-      callBtn.textContent = "📞 Make Emergency Sign";
+      confirmedGesture = ""; currentGesture = ""; currentEmergencyData = null;
+      callBtn.disabled = true; callBtn.textContent = "📞 Make Emergency Sign";
       translationQueue = [];
     });
 
@@ -1559,64 +1436,36 @@
       locationSentModal.classList.remove("active");
       if (pendingCall) {
         const { gesture, number } = pendingCall;
-        
-        // Show WhatsApp call simulation
         const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
         showWhatsAppCall(serviceName, number, gesture);
-        
         statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">CALLING ${serviceName.toUpperCase()}</span><br>📞 WhatsApp Calling ${number}...`;
         speak(`Calling ${serviceName}. ${gesture.phrase}`);
-
-        // Try actual phone call
+        setTimeout(() => { window.location.href = `tel:${number}`; }, 1000);
         setTimeout(() => {
-          window.location.href = `tel:${number}`;
-        }, 1000);
-
-        setTimeout(() => {
-          confirmedGesture = "";
-          currentGesture = "";
-          currentEmergencyData = null;
-          pendingCall = null;
-          callBtn.disabled = true;
-          callBtn.textContent = "📞 Make Emergency Sign";
+          confirmedGesture = ""; currentGesture = ""; currentEmergencyData = null; pendingCall = null;
+          callBtn.disabled = true; callBtn.textContent = "📞 Make Emergency Sign";
         }, 5000);
       }
     });
 
-    // ========== SEND EMERGENCY LOCATION + VOICE MESSAGE ==========
+    // ========== SEND EMERGENCY LOCATION ==========
     async function sendEmergencyLocation(gesture, emergencyNumber) {
       return new Promise(async (resolve, reject) => {
         const contacts = getEmergencyContacts();
-        if (contacts.length === 0) {
-          showToast("No Contact", "No emergency contact configured", "warning");
-          resolve();
-          return;
-        }
-        if (!navigator.geolocation) {
-          showToast("Location Error", "Geolocation not supported", "error");
-          resolve();
-          return;
-        }
-
-        // Show voice recording indicator
+        if (contacts.length === 0) { showToast("No Contact", "No emergency contact configured", "warning"); resolve(); return; }
+        if (!navigator.geolocation) { showToast("Location Error", "Geolocation not supported", "error"); resolve(); return; }
         voiceRecording.classList.add("active");
-        
-        // Generate voice message text
         const voiceText = gesture.phrase || `Emergency: ${gesture.name}`;
         await generateVoiceBlob(voiceText);
-        
         setTimeout(() => voiceRecording.classList.remove("active"), 3000);
-
         if (userLocation.lat && userLocation.lng) {
-          processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts);
-          resolve();
+          processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts); resolve();
         } else {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, text: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` };
               document.getElementById("locationBadge").textContent = `📍 ${userLocation.text}`;
-              processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts);
-              resolve();
+              processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts); resolve();
             },
             (err) => { showToast("Location Error", "Could not get location", "error"); resolve(); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -1626,64 +1475,22 @@
     }
 
     function processLocationSend(lat, lng, gesture, emergencyNumber, contacts) {
-      let userName = "Unknown User";
-      let userPhone = "";
+      let userName = "Unknown User"; let userPhone = "";
       try {
         const savedUser = localStorage.getItem("signsos_user");
-        if (savedUser) {
-          const user = JSON.parse(savedUser);
-          userName = user.name || "Unknown User";
-          userPhone = `${user.countryCode} ${user.phone}`;
-        }
+        if (savedUser) { const user = JSON.parse(savedUser); userName = user.name || "Unknown User"; userPhone = `${user.countryCode} ${user.phone}`; }
       } catch (e) {}
-
       const mapLink = `https://maps.google.com/?q=${lat},${lng}`;
       const timestamp = new Date().toLocaleString();
-      
-      // Build comprehensive message with AI voice translation
-      const message = `🚨 *SIGNSOS EMERGENCY ALERT* 🚨
-
-👤 *From:* ${userName}
-📞 *Phone:* ${userPhone}
-
-⚠️ *Emergency Type:* ${gesture.icon} ${gesture.name}
-
-🗣️ *AI Voice Translation:*
-"${gesture.phrase}"
-
-📍 *Live Location:*
-${mapLink}
-
-📋 *Details:*
-• Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}
-• Service Needed: ${gesture.service.toUpperCase()}
-• Emergency Number: ${emergencyNumber}
-• Time: ${timestamp}
-
-💬 *Full Translation Log:*
-${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
-
-🔊 *Voice Message:* The person signed "${gesture.name}" which translates to "${gesture.phrase}"
-
-🔔 This is an automated emergency alert from SignSOS app. The person may be unable to speak. The AI has translated their sign language. Please respond immediately!`;
-
-      let sentCount = 0;
-      const sentContacts = [];
-
+      const message = `🚨 *SIGNSOS EMERGENCY ALERT* 🚨\n\n👤 *From:* ${userName}\n📞 *Phone:* ${userPhone}\n\n⚠️ *Emergency Type:* ${gesture.icon} ${gesture.name}\n\n🗣️ *AI Voice Translation:*\n"${gesture.phrase}"\n\n📍 *Live Location:*\n${mapLink}\n\n📋 *Details:*\n• Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n• Service Needed: ${gesture.service.toUpperCase()}\n• Emergency Number: ${emergencyNumber}\n• Time: ${timestamp}\n\n💬 *Full Translation Log:*\n${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}\n\n🔊 *Voice Message:* The person signed "${gesture.name}" which translates to "${gesture.phrase}"\n\n🔔 This is an automated emergency alert from SignSOS app. The person may be unable to speak. The AI has translated their sign language. Please respond immediately!`;
+      let sentCount = 0; const sentContacts = [];
       contacts.forEach((contact, index) => {
         if (contact.type === "whatsapp") {
           const waUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(message)}`;
-          if (index === 0) {
-            setTimeout(() => {
-              const newWindow = window.open(waUrl, '_blank');
-              if (!newWindow) window.location.href = waUrl;
-            }, 100);
-          }
-          sentCount++;
-          sentContacts.push(contact);
+          if (index === 0) { setTimeout(() => { const newWindow = window.open(waUrl, '_blank'); if (!newWindow) window.location.href = waUrl; }, 100); }
+          sentCount++; sentContacts.push(contact);
         }
       });
-
       if (sentCount > 0) {
         showLocationSentModal(sentContacts, gesture, { gesture, number: emergencyNumber });
         speak(`Emergency location and voice message sent to ${sentCount} contact`);
@@ -1697,84 +1504,50 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
         const data = await r.json();
         serverOnline = data.status === "ok" && data.model_loaded;
         serverStatusEl.className = serverOnline ? "server-status server-online" : "server-status server-offline";
-        serverStatusEl.textContent = serverOnline
-          ? (API_URL.includes("127.0.0.1") ? "🟢 ML Local" : "🟢 ML Cloud")
-          : "🟡 Local Detection";
+        serverStatusEl.textContent = serverOnline ? (API_URL.includes("127.0.0.1") ? "🟢 ML Local" : "🟢 ML Cloud") : "🟡 Local Detection";
       } catch (e) {
-        serverOnline = false;
-        serverStatusEl.className = "server-status server-offline";
-        serverStatusEl.textContent = "🟡 Local Detection";
+        serverOnline = false; serverStatusEl.className = "server-status server-offline"; serverStatusEl.textContent = "🟡 Local Detection";
       }
     }
 
     // ========== ML PREDICTION (API) ==========
     async function predictGestureFromAPI(landmarks) {
       const now = Date.now();
-      if (now - lastApiCall < API_DELAY || pendingPrediction || !serverOnline) {
-        return lastPrediction;
-      }
-      lastApiCall = now;
-      pendingPrediction = true;
+      if (now - lastApiCall < API_DELAY || pendingPrediction || !serverOnline) return lastPrediction;
+      lastApiCall = now; pendingPrediction = true;
       const lmList = [];
       for (const p of landmarks) { lmList.push(p.x, p.y); }
       try {
-        const r = await fetch(`${API_URL}/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ landmarks: lmList }),
-          signal: AbortSignal.timeout(2000)
-        });
+        const r = await fetch(`${API_URL}/predict`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ landmarks: lmList }), signal: AbortSignal.timeout(2000) });
         const data = await r.json();
         lastPrediction = data.error ? null : (data.gesture || null);
-      } catch (err) {
-        lastPrediction = null;
-      } finally {
-        pendingPrediction = false;
-      }
+      } catch (err) { lastPrediction = null; } finally { pendingPrediction = false; }
       return lastPrediction;
     }
 
     // ========== COMBINED GESTURE DETECTION ==========
-    // Priority: API result (if valid & different from always-OK) → Local detection fallback
     let apiAlwaysReturns = null;
     let apiResultCount = {};
 
     async function detectGesture(landmarks) {
-      let apiResult = null;
-      let localResult = null;
-      
-      // Get local detection result (always available)
+      let apiResult = null; let localResult = null;
       localResult = detectGestureFromLandmarks(landmarks);
-      
-      // Try API if online
       if (serverOnline) {
         apiResult = await predictGestureFromAPI(landmarks);
-        
-        // Track API results to detect "always returns same thing" bug
         if (apiResult) {
           const normalized = apiResult.trim().toUpperCase().replace(/\s+/g, '_');
           apiResultCount[normalized] = (apiResultCount[normalized] || 0) + 1;
-          
           const total = Object.values(apiResultCount).reduce((a, b) => a + b, 0);
           const maxCount = Math.max(...Object.values(apiResultCount));
-          
-          // If API returns same thing >80% of the time, it's broken
           if (total > 20 && (maxCount / total) > 0.8) {
             apiAlwaysReturns = Object.keys(apiResultCount).find(k => apiResultCount[k] === maxCount);
-            console.warn(`⚠️ API seems stuck on "${apiAlwaysReturns}", using local detection`);
           }
         }
-        
-        // Use API result if it's valid and not stuck
         if (apiResult) {
           const normalizedApi = apiResult.trim().toUpperCase().replace(/\s+/g, '_');
-          if (aslGestures[normalizedApi] && normalizedApi !== apiAlwaysReturns) {
-            return normalizedApi;
-          }
+          if (aslGestures[normalizedApi] && normalizedApi !== apiAlwaysReturns) return normalizedApi;
         }
       }
-      
-      // Use local detection
       return localResult;
     }
 
@@ -1782,43 +1555,23 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
     async function initializeHandLandmarker() {
       try {
         debugInfo.textContent = "Loading MediaPipe...";
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-        );
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
         handLandmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate: "GPU"
-          },
-          runningMode: "VIDEO",
-          numHands: 2,
-          minHandDetectionConfidence: 0.6,
-          minHandPresenceConfidence: 0.6,
-          minTrackingConfidence: 0.6
+          baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "GPU" },
+          runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.6
         });
         drawingUtils = new DrawingUtils(ctx);
         debugInfo.textContent = "✓ MediaPipe ready";
-      } catch (error) {
-        debugInfo.textContent = "Error: " + error.message;
-      }
+      } catch (error) { debugInfo.textContent = "Error: " + error.message; }
     }
 
     // ========== DETECTION LOOP ==========
     function predictWebcam() {
-      if (!handLandmarker || video.currentTime === lastVideoTime) {
-        requestAnimationFrame(predictWebcam);
-        return;
-      }
+      if (!handLandmarker || video.currentTime === lastVideoTime) { requestAnimationFrame(predictWebcam); return; }
       lastVideoTime = video.currentTime;
       let results;
-      try {
-        results = handLandmarker.detectForVideo(video, Date.now());
-      } catch (e) {
-        requestAnimationFrame(predictWebcam);
-        return;
-      }
+      try { results = handLandmarker.detectForVideo(video, Date.now()); } catch (e) { requestAnimationFrame(predictWebcam); return; }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       if (results.landmarks && results.landmarks.length > 0) {
         for (const lm of results.landmarks) {
           drawingUtils.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
@@ -1826,11 +1579,7 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
         }
         detectGesture(results.landmarks[0]).then(handleGestureResult);
       } else {
-        if (currentGesture) {
-          currentGesture = "";
-          progressBar.style.display = 'none';
-          if (!confirmedGesture && !isCallActive) statusText.textContent = "Waiting for sign input…";
-        }
+        if (currentGesture) { currentGesture = ""; progressBar.style.display = 'none'; if (!confirmedGesture && !isCallActive) statusText.textContent = "Waiting for sign input…"; }
         debugInfo.textContent = serverOnline ? "No hand | ML: Online" : "No hand | Local Detection";
       }
       requestAnimationFrame(predictWebcam);
@@ -1839,141 +1588,79 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
     // ========== HANDLE RESULT ==========
     function handleGestureResult(detected) {
       if (!detected) return;
-
       const normalized = detected.trim().toUpperCase().replace(/\s+/g, '_');
-      
-      if (!aslGestures[normalized]) {
-        debugInfo.textContent = `Unknown: "${normalized}"`;
-        return;
-      }
-
+      if (!aslGestures[normalized]) { debugInfo.textContent = `Unknown: "${normalized}"`; return; }
       const gestureData = aslGestures[normalized];
       debugInfo.textContent = `${gestureData.icon} ${normalized} | ${gestureData.isEmergency ? '🚨 EMERGENCY' : '✅ SAFE'} | ${serverOnline ? '🟢 API' : '🟡 Local'}`;
-
       const now = Date.now();
-
       if (normalized === currentGesture) {
         const hold = now - gestureStartTime;
         const progress = Math.min(100, (hold / HOLD_TIME) * 100);
-        progressBar.style.display = 'block';
-        progressFill.style.width = progress + '%';
-
+        progressBar.style.display = 'block'; progressFill.style.width = progress + '%';
         if (hold >= HOLD_TIME && normalized !== confirmedGesture) {
-          confirmedGesture = normalized;
-          progressBar.style.display = 'none';
-          
-          // Add to translation
+          confirmedGesture = normalized; progressBar.style.display = 'none';
           addTranslation(normalized, gestureData);
-          
           if (gestureData.isEmergency) {
-            // === EMERGENCY GESTURE → Trigger call flow ===
             const number = getEmergencyNumber(gestureData.service);
             showConfirmationModal(gestureData, number);
           } else {
-            // === NON-EMERGENCY GESTURE → Just translate, NO call ===
             statusText.innerHTML = `${gestureData.icon} <span class="non-emergency-detected">${gestureData.name}</span><br>🗣️ "${gestureData.phrase}"<br><small style="color:#94a3b8;">No emergency call needed</small>`;
-            callBtn.disabled = true;
-            callBtn.textContent = `✅ ${gestureData.name} — No Call Needed`;
-            
-            // Reset after 3 seconds for next gesture
-            setTimeout(() => {
-              if (confirmedGesture === normalized) {
-                confirmedGesture = "";
-                currentGesture = "";
-                callBtn.disabled = true;
-                callBtn.textContent = "📞 Make Emergency Sign";
-                statusText.textContent = "Waiting for sign input…";
-              }
-            }, 3000);
+            callBtn.disabled = true; callBtn.textContent = `✅ ${gestureData.name} — No Call Needed`;
+            setTimeout(() => { if (confirmedGesture === normalized) { confirmedGesture = ""; currentGesture = ""; callBtn.disabled = true; callBtn.textContent = "📞 Make Emergency Sign"; statusText.textContent = "Waiting for sign input…"; } }, 3000);
           }
         } else if (normalized !== confirmedGesture) {
           const label = gestureData.isEmergency ? 'emergency-detected' : 'non-emergency-detected';
           statusText.innerHTML = `${gestureData.icon} <span class="${label}">${gestureData.name}</span><br>Hold steady... ${progress.toFixed(0)}%`;
         }
       } else {
-        currentGesture = normalized;
-        gestureStartTime = now;
-        confirmedGesture = "";
-        progressBar.style.display = 'block';
-        progressFill.style.width = '0%';
-        
+        currentGesture = normalized; gestureStartTime = now; confirmedGesture = "";
+        progressBar.style.display = 'block'; progressFill.style.width = '0%';
         const typeLabel = gestureData.isEmergency ? '🚨 Emergency' : '✅ Info';
         statusText.innerHTML = `${gestureData.icon} Detecting: ${gestureData.name} (${typeLabel})<br>Hold for 2 seconds`;
       }
     }
 
-    // ========== CONFIRMATION MODAL (only for emergencies) ==========
+    // ========== CONFIRMATION MODAL ==========
     function showConfirmationModal(gesture, number) {
       currentEmergencyData = { gesture, number };
       modalIcon.textContent = gesture.icon;
       modalTitle.textContent = "Confirm Emergency Call";
-      
       const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
       modalMessage.innerHTML = `<strong>${gesture.name} detected</strong><br>Calling ${serviceName}: ${number}<br><br>🗣️ AI will say: <em>"${gesture.phrase}"</em>`;
-      
       const contacts = getEmergencyContacts();
       const contactName = contacts.length > 0 ? contacts[0].name : "your emergency contact";
-      
       modalDetails.innerHTML = `📍 ${userLocation.text}<br>🕐 ${new Date().toLocaleTimeString()}<br>📱 Location + voice message will be sent to ${contactName}<br>📞 ${serviceName} will be called at ${number}`;
       modalOverlay.classList.add('active');
-      callBtn.disabled = false;
-      callBtn.textContent = `📞 Call ${serviceName} ${number}`;
+      callBtn.disabled = false; callBtn.textContent = `📞 Call ${serviceName} ${number}`;
       speak(`${gesture.name} detected. ${gesture.phrase}. Tap confirm to call ${serviceName}.`);
     }
 
     btnCancel.addEventListener('click', () => {
-      modalOverlay.classList.remove('active');
-      confirmedGesture = "";
-      currentGesture = "";
-      currentEmergencyData = null;
-      statusText.textContent = "Call cancelled.";
-      callBtn.disabled = true;
-      callBtn.textContent = "📞 Make Emergency Sign";
-      speak("Call cancelled");
+      modalOverlay.classList.remove('active'); confirmedGesture = ""; currentGesture = ""; currentEmergencyData = null;
+      statusText.textContent = "Call cancelled."; callBtn.disabled = true; callBtn.textContent = "📞 Make Emergency Sign"; speak("Call cancelled");
     });
 
     btnConfirm.addEventListener('click', async () => {
       if (!currentEmergencyData) return;
       const { gesture, number } = currentEmergencyData;
       modalOverlay.classList.remove('active');
-
       statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">SENDING LOCATION & VOICE...</span><br>📍 Sharing your location + AI voice message...`;
-      
-      // Show voice recording
       voiceRecording.classList.add("active");
-      
       try {
         await sendEmergencyLocation(gesture, number);
       } catch (error) {
         console.error("Error sending location:", error);
         showToast("Warning", "Could not share location, proceeding with call", "warning");
-        
         const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
         showWhatsAppCall(serviceName, number, gesture);
-        
         statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">CALLING ${serviceName.toUpperCase()}</span><br>📞 Dialing ${number}...`;
         speak(`Calling ${serviceName}. ${gesture.phrase}`);
-        
-        setTimeout(() => {
-          window.location.href = `tel:${number}`;
-        }, 500);
-
-        setTimeout(() => {
-          confirmedGesture = "";
-          currentGesture = "";
-          currentEmergencyData = null;
-          callBtn.disabled = true;
-          callBtn.textContent = "📞 Make Emergency Sign";
-          statusText.textContent = "Call initiated. Make another sign if needed.";
-        }, 3000);
-      } finally {
-        voiceRecording.classList.remove("active");
-      }
+        setTimeout(() => { window.location.href = `tel:${number}`; }, 500);
+        setTimeout(() => { confirmedGesture = ""; currentGesture = ""; currentEmergencyData = null; callBtn.disabled = true; callBtn.textContent = "📞 Make Emergency Sign"; statusText.textContent = "Call initiated. Make another sign if needed."; }, 3000);
+      } finally { voiceRecording.classList.remove("active"); }
     });
 
-    callBtn.addEventListener('click', () => {
-      if (currentEmergencyData) btnConfirm.click();
-    });
+    callBtn.addEventListener('click', () => { if (currentEmergencyData) btnConfirm.click(); });
 
     // ========== LOCATION ==========
     function getLocation() {
@@ -1995,39 +1682,90 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
     // ========== CAMERA ==========
     async function enableCam() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: false
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
         video.srcObject = stream;
-        return new Promise((resolve) => {
-          video.addEventListener("loadeddata", () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            resolve();
-          });
-        });
-      } catch (error) {
-        debugInfo.textContent = "Camera error: " + error.message;
-      }
+        return new Promise((resolve) => { video.addEventListener("loadeddata", () => { canvas.width = video.videoWidth; canvas.height = video.videoHeight; resolve(); }); });
+      } catch (error) { debugInfo.textContent = "Camera error: " + error.message; }
     }
 
-    // ========== PWA INSTALL ==========
+    // ========== PWA INSTALL (ENHANCED) ==========
     let deferredPrompt = null;
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       document.getElementById('installBanner').classList.add('show');
     });
+
     document.getElementById('installBtn').addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      document.getElementById('installBanner').classList.remove('show');
+      if (deferredPrompt) {
+        // Native PWA install prompt (works on Chrome Android)
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === 'accepted') {
+          showToast("Installing", "SignSOS is being installed on your device!", "success");
+        }
+        deferredPrompt = null;
+        document.getElementById('installBanner').classList.remove('show');
+      } else {
+        // Fallback: show manual instructions
+        showInstallInstructions();
+      }
     });
+
     document.getElementById('dismissInstall').addEventListener('click', () => {
       document.getElementById('installBanner').classList.remove('show');
+      localStorage.setItem('signsos_install_dismissed', Date.now().toString());
+    });
+
+    // Show install banner after 3 seconds if not already installed and not dismissed recently
+    function checkShowInstallBanner() {
+      // Don't show if already in standalone mode (already installed)
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+
+      const dismissed = localStorage.getItem('signsos_install_dismissed');
+      if (dismissed && (Date.now() - parseInt(dismissed)) < 86400000) return; // Don't show for 24h after dismiss
+
+      // If beforeinstallprompt hasn't fired yet, show manual banner after delay
+      setTimeout(() => {
+        if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+          // Show banner with manual instructions for browsers that don't fire beforeinstallprompt
+          const banner = document.getElementById('installBanner');
+          if (!banner.classList.contains('show')) {
+            banner.classList.add('show');
+          }
+        }
+      }, 5000);
+    }
+
+    function showInstallInstructions() {
+      // Detect browser
+      const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|OPR/.test(navigator.userAgent);
+      const isSamsung = /SamsungBrowser/.test(navigator.userAgent);
+      const isFirefox = /Firefox/.test(navigator.userAgent);
+      const isOpera = /OPR/.test(navigator.userAgent);
+
+      let instructions = '';
+      if (isChrome) {
+        instructions = '1. Tap the ⋮ (three dots) menu at top-right\n2. Tap "Add to Home screen"\n3. Tap "Install"\n\nThe app will appear on your home screen like a regular app!';
+      } else if (isSamsung) {
+        instructions = '1. Tap the menu icon (≡) at bottom\n2. Tap "Add page to"\n3. Select "Home screen"\n\nThe app will appear on your home screen!';
+      } else if (isFirefox) {
+        instructions = '1. Tap the ⋮ (three dots) menu\n2. Tap "Install"\n\nThe app will be installed on your device!';
+      } else if (isOpera) {
+        instructions = '1. Tap the ⋮ menu at top-right\n2. Tap "Add to Home screen"\n\nThe app will appear on your home screen!';
+      } else {
+        instructions = '1. Open this page in Chrome browser\n2. Tap the ⋮ (three dots) menu\n3. Tap "Add to Home screen" or "Install app"\n\nThe app will install like a regular Android app!';
+      }
+
+      alert('📲 Install SignSOS\n\n' + instructions);
+    }
+
+    // Listen for successful install
+    window.addEventListener('appinstalled', () => {
+      showToast("Installed! ✅", "SignSOS has been installed on your device", "success");
+      document.getElementById('installBanner').classList.remove('show');
+      deferredPrompt = null;
     });
 
     // ========== SERVICE WORKER ==========
@@ -2042,7 +1780,6 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
       if (appInitialized) return;
       appInitialized = true;
       console.log("🚨 SignSOS Main App Starting...");
-      
       await loadEmergencyNumbers();
       updateEmergencyNumbers();
       await findBestServer();
@@ -2050,22 +1787,14 @@ ${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
       await enableCam();
       predictWebcam();
       getLocation();
-      
-      // Preload voices
-      if ('speechSynthesis' in window) {
-        speechSynthesis.getVoices();
-        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
-      }
-      
+      if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
       setInterval(checkServer, 10000);
-      
       const contacts = getEmergencyContacts();
-      if (contacts.length > 0) {
-        setTimeout(() => {
-          showToast("Ready", `Emergency contact: ${contacts[0].name} • AI Voice enabled`, "success");
-        }, 1500);
-      }
-      
+      if (contacts.length > 0) { setTimeout(() => { showToast("Ready", `Emergency contact: ${contacts[0].name} • AI Voice enabled`, "success"); }, 1500); }
+
+      // Check if we should show install banner
+      checkShowInstallBanner();
+
       console.log("✅ SignSOS Ready! Gestures loaded:", Object.keys(aslGestures).length);
     }
 
