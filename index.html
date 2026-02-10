@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SignSOS App</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#dc2626">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SignSOS">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: #020617;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      height: 100%;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ==================== ONBOARDING STYLES ==================== */
+    .onboarding-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex;
+      flex-direction: column;
+      z-index: 2000;
+      overflow: hidden;
+    }
+
+    .onboarding-container.hidden {
+      display: none;
+    }
+
+    .onboarding-header {
+      padding: 40px 24px 20px;
+      text-align: center;
+      padding-top: max(40px, env(safe-area-inset-top));
+    }
+
+    .onboarding-logo {
+      font-size: 56px;
+      margin-bottom: 12px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .onboarding-title {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #dc2626, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .onboarding-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px;
+    }
+
+    .progress-step {
+      width: 40px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .progress-step.active {
+      background: linear-gradient(90deg, #dc2626, #f59e0b);
+    }
+
+    .progress-step.completed {
+      background: #10b981;
+    }
+
+    .onboarding-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 24px;
+      overflow-y: auto;
+    }
+
+    .onboarding-step {
+      display: none;
+      flex-direction: column;
+      animation: slideIn 0.4s ease;
+    }
+
+    .onboarding-step.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-icon { font-size: 64px; text-align: center; margin-bottom: 20px; }
+    .step-title { font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 8px; color: #f8fafc; }
+    .step-description { font-size: 14px; color: #94a3b8; text-align: center; margin-bottom: 32px; line-height: 1.6; }
+
+    .input-group { margin-bottom: 20px; }
+    .input-label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+    .input-wrapper { position: relative; }
+    .input-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; }
+
+    .input-field {
+      width: 100%;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 14px;
+      padding: 16px 16px 16px 52px;
+      font-size: 16px;
+      color: white;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .input-field:focus { border-color: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1); }
+    .input-field::placeholder { color: #64748b; }
+    .input-field.error { border-color: #ef4444; animation: shake 0.4s ease; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .input-error { color: #ef4444; font-size: 12px; margin-top: 6px; display: none; }
+    .input-error.show { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .otp-container { display: flex; justify-content: center; gap: 12px; margin: 20px 0; }
+
+    .otp-input {
+      width: 56px; height: 64px; background: #1e293b; border: 2px solid #334155;
+      border-radius: 14px; text-align: center; font-size: 24px; font-weight: 700;
+      color: white; outline: none; transition: all 0.3s ease;
+    }
+
+    .otp-input:focus { border-color: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1); transform: scale(1.05); }
+    .otp-input.filled { border-color: #10b981; background: #064e3b; }
+
+    .resend-otp { text-align: center; margin-top: 20px; }
+    .resend-otp span { color: #64748b; font-size: 14px; }
+
+    .resend-btn {
+      background: none; border: none; color: #dc2626; font-size: 14px;
+      font-weight: 600; cursor: pointer; padding: 4px 8px;
+    }
+    .resend-btn:disabled { color: #64748b; cursor: not-allowed; }
+
+    .phone-input-wrapper { display: flex; gap: 10px; }
+
+    .country-code {
+      width: 90px; background: #1e293b; border: 2px solid #334155; border-radius: 14px;
+      padding: 16px 12px; font-size: 16px; color: white; text-align: center; outline: none;
+    }
+
+    .phone-number-input {
+      flex: 1; background: #1e293b; border: 2px solid #334155; border-radius: 14px;
+      padding: 16px; font-size: 16px; color: white; outline: none; transition: all 0.3s ease;
+    }
+    .phone-number-input:focus { border-color: #dc2626; }
+
+    .btn-primary {
+      width: 100%; background: linear-gradient(135deg, #dc2626, #b91c1c); border: none;
+      border-radius: 14px; padding: 18px; font-size: 17px; font-weight: 700; color: white;
+      cursor: pointer; transition: all 0.3s ease; margin-top: 20px; position: relative; overflow: hidden;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(220, 38, 38, 0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-primary.loading { pointer-events: none; }
+    .btn-primary.loading::after {
+      content: ""; position: absolute; width: 24px; height: 24px;
+      border: 3px solid transparent; border-top-color: white; border-radius: 50%;
+      animation: spin 1s linear infinite; right: 20px; top: 50%; transform: translateY(-50%);
+    }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .btn-secondary {
+      width: 100%; background: transparent; border: 2px solid #334155; border-radius: 14px;
+      padding: 16px; font-size: 15px; font-weight: 600; color: #94a3b8; cursor: pointer;
+      margin-top: 12px; transition: all 0.3s ease;
+    }
+    .btn-secondary:hover { border-color: #64748b; color: white; }
+
+    .contact-card {
+      background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid #475569;
+      border-radius: 16px; padding: 20px; margin-bottom: 16px;
+    }
+    .contact-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .contact-card-icon {
+      width: 48px; height: 48px; background: linear-gradient(135deg, #dc2626, #f59e0b);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .contact-card-title { font-size: 16px; font-weight: 600; color: #f8fafc; }
+    .contact-card-subtitle { font-size: 12px; color: #94a3b8; }
+
+    .welcome-features { display: flex; flex-direction: column; gap: 16px; margin: 24px 0; }
+    .welcome-feature {
+      display: flex; align-items: center; gap: 16px; background: rgba(30, 41, 59, 0.5);
+      padding: 16px; border-radius: 14px; border: 1px solid #334155;
+    }
+    .welcome-feature-icon {
+      width: 44px; height: 44px; background: linear-gradient(135deg, #1e40af, #7c3aed);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .welcome-feature-text { font-size: 14px; color: #e2e8f0; line-height: 1.4; }
+
+    .success-animation { text-align: center; padding: 40px 0; }
+    .success-checkmark {
+      width: 100px; height: 100px; margin: 0 auto 24px;
+      background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 48px;
+      animation: scaleIn 0.5s ease;
+    }
+    @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .terms-text { font-size: 11px; color: #64748b; text-align: center; margin-top: 16px; line-height: 1.5; }
+    .terms-text a { color: #dc2626; text-decoration: none; }
+
+    /* ==================== MAIN APP STYLES ==================== */
+    .main-app { display: none; flex-direction: column; height: 100%; }
+    .main-app.active { display: flex; }
+
+    .app-header {
+      background: #020617; padding: 16px; padding-top: max(16px, env(safe-area-inset-top));
+      text-align: center; border-bottom: 1px solid #1e293b; position: relative;
+    }
+    .app-header h1 { font-size: 20px; font-weight: 600; }
+    .app-header > span { font-size: 12px; color: #94a3b8; }
+
+    .location-badge {
+      position: absolute; top: 12px; right: 12px; background: #1e293b;
+      padding: 6px 10px; border-radius: 10px; font-size: 11px; color: #e5e7eb; border: 1px solid #334155;
+    }
+
+    .server-status {
+      position: absolute; top: 12px; left: 12px; padding: 6px 10px;
+      border-radius: 10px; font-size: 11px; border: 1px solid #334155;
+    }
+
+    .user-badge {
+      position: absolute; top: 40px; left: 12px; background: #1e3a5f;
+      padding: 4px 8px; border-radius: 8px; font-size: 10px; color: #93c5fd;
+      border: 1px solid #1e40af; cursor: pointer;
+    }
+
+    .server-online { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+    .server-offline { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
+    .server-checking { background: #78350f; color: #fcd34d; border-color: #f59e0b; }
+
+    .emergency-list {
+      background: #1e293b; padding: 10px; display: flex;
+      justify-content: space-around; border-bottom: 2px solid #020617;
+    }
+    .emergency-item { text-align: center; font-size: 12px; }
+    .emergency-item strong { display: block; font-size: 16px; margin-top: 2px; }
+
+    .camera-view {
+      flex: 1; background: #020617; display: flex; align-items: center;
+      justify-content: center; position: relative; overflow: hidden; min-height: 200px;
+    }
+
+    video#camera { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+    #overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1);
+    }
+
+    .status { background: #1e293b; padding: 14px; font-size: 14px; min-height: 70px; }
+    .status h3 { font-size: 15px; margin-bottom: 6px; color: #10b981; }
+    .status p { color: #e5e7eb; font-weight: 500; line-height: 1.4; }
+    .emergency-detected { color: #fbbf24; font-weight: bold; font-size: 16px; }
+    .non-emergency-detected { color: #10b981; font-weight: bold; font-size: 16px; }
+
+    .bottom-action {
+      padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: #020617;
+    }
+
+    .call-btn {
+      width: 100%; background: #dc2626; border: none; border-radius: 14px;
+      padding: 16px; font-size: 18px; font-weight: bold; color: white; cursor: pointer;
+    }
+    .call-btn:active { background: #b91c1c; }
+    .call-btn:disabled { background: #64748b; cursor: not-allowed; }
+
+    .note { text-align: center; margin-top: 6px; font-size: 11px; color: #fca5a5; }
+
+    .debug-info {
+      position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7);
+      padding: 8px; font-size: 10px; border-radius: 4px; z-index: 10;
+      max-width: 250px; line-height: 1.4;
+    }
+
+    /* Translation Panel */
+    .translation-panel {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-top: 2px solid #334155;
+      padding: 10px 14px;
+      min-height: 60px;
+    }
+
+    .translation-panel h4 {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .translation-text {
+      font-size: 16px;
+      color: #f8fafc;
+      font-weight: 600;
+      min-height: 24px;
+    }
+
+    .translation-history {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .translation-chip {
+      background: #334155;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+    }
+
+    .translation-chip.emergency { border-color: #dc2626; color: #fca5a5; }
+    .translation-chip.safe { border-color: #10b981; color: #6ee7b7; }
+
+    /* Voice Recording Indicator */
+    .voice-recording {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #7f1d1d, #991b1b);
+      padding: 10px 16px;
+      border-radius: 12px;
+      margin-top: 8px;
+      animation: pulseRed 1.5s infinite;
+    }
+
+    .voice-recording.active { display: flex; }
+
+    @keyframes pulseRed {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .voice-dot {
+      width: 12px; height: 12px; background: #ef4444; border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .voice-recording-text { font-size: 13px; color: #fca5a5; }
+
+    /* WhatsApp Call Banner */
+    .wa-call-banner {
+      display: none;
+      background: linear-gradient(135deg, #166534, #15803d);
+      padding: 16px;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 2px solid #22c55e;
+      animation: slideDown 0.4s ease;
+    }
+
+    .wa-call-banner.active { display: flex; }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .wa-call-icon { font-size: 36px; }
+    .wa-call-info { flex: 1; }
+    .wa-call-title { font-size: 16px; font-weight: 700; color: #dcfce7; }
+    .wa-call-number { font-size: 13px; color: #bbf7d0; }
+    .wa-call-status { font-size: 11px; color: #86efac; margin-top: 2px; }
+
+    .wa-call-end {
+      background: #dc2626; border: none; color: white; padding: 10px 18px;
+      border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer;
+    }
+
+    /* Install Banner */
+    .install-banner {
+      display: none; background: linear-gradient(135deg, #1e40af, #7c3aed);
+      padding: 12px 16px; align-items: center; justify-content: space-between;
+      gap: 10px; border-bottom: 1px solid #334155;
+    }
+    .install-banner.show { display: flex; }
+    .install-banner-text { font-size: 13px; flex: 1; }
+    .install-banner-text strong { display: block; font-size: 14px; }
+
+    .install-btn {
+      background: white; color: #1e40af; border: none; padding: 8px 16px;
+      border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; white-space: nowrap;
+    }
+
+    .install-dismiss {
+      background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 4px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); display: none; align-items: center;
+      justify-content: center; z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #1e293b; border-radius: 20px; padding: 24px;
+      max-width: 340px; width: 90%; border: 2px solid #fbbf24;
+    }
+    .modal-header { text-align: center; margin-bottom: 20px; }
+    .modal-icon { font-size: 48px; margin-bottom: 12px; }
+    .modal-title { font-size: 20px; font-weight: bold; color: #fbbf24; margin-bottom: 8px; }
+    .modal-message { font-size: 16px; color: #e5e7eb; line-height: 1.5; margin-bottom: 8px; }
+
+    .modal-details {
+      font-size: 14px; color: #94a3b8; background: #0f172a;
+      padding: 12px; border-radius: 8px; margin-top: 12px;
+    }
+
+    .modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
+
+    .modal-btn {
+      flex: 1; border: none; border-radius: 12px;
+      padding: 14px; font-size: 16px; font-weight: bold; cursor: pointer;
+    }
+    .modal-btn-confirm { background: #dc2626; color: white; }
+    .modal-btn-cancel { background: #64748b; color: white; }
+
+    .progress-bar {
+      width: 100%; height: 6px; background: #0f172a;
+      border-radius: 3px; overflow: hidden; margin-top: 12px;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6);
+      transition: width 0.1s linear; border-radius: 3px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; display: flex; flex-direction: column; gap: 10px;
+      width: 90%; max-width: 380px;
+    }
+
+    .toast {
+      background: linear-gradient(135deg, #10b981, #059669); color: white;
+      padding: 16px 20px; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      display: flex; align-items: center; gap: 12px;
+      animation: slideInToast 0.4s ease, fadeOutToast 0.4s ease 4.6s forwards;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    .toast.error { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .toast.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+    .toast-icon { font-size: 28px; flex-shrink: 0; }
+    .toast-content { flex: 1; }
+    .toast-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+    .toast-message { font-size: 13px; opacity: 0.95; line-height: 1.4; }
+
+    .toast-close {
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+    }
+
+    @keyframes slideInToast { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOutToast { to { opacity: 0; transform: translateY(-20px); } }
+
+    /* Location Sent Modal */
+    .location-sent-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9); display: none; align-items: center;
+      justify-content: center; z-index: 1500;
+    }
+    .location-sent-modal.active { display: flex; }
+
+    .location-sent-content {
+      background: linear-gradient(135deg, #064e3b, #065f46); border-radius: 24px;
+      padding: 32px; max-width: 320px; width: 90%; text-align: center;
+      border: 3px solid #10b981; animation: popIn 0.4s ease;
+    }
+
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .location-sent-icon { font-size: 64px; margin-bottom: 16px; }
+    .location-sent-title { font-size: 22px; font-weight: bold; color: #6ee7b7; margin-bottom: 12px; }
+    .location-sent-message { font-size: 15px; color: #d1fae5; line-height: 1.6; margin-bottom: 20px; }
+
+    .location-sent-details {
+      background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px;
+      font-size: 13px; color: #a7f3d0; margin-bottom: 20px; text-align: left;
+    }
+
+    .location-sent-btn {
+      background: #10b981; color: white; border: none; padding: 14px 32px;
+      border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;
+    }
+    .location-sent-btn:active { background: #059669; }
+
+    /* Profile Modal */
+    .profile-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9); display: none; align-items: center;
+      justify-content: center; z-index: 1600;
+    }
+    .profile-modal.active { display: flex; }
+
+    .profile-content {
+      background: #1e293b; border-radius: 24px; padding: 28px;
+      max-width: 340px; width: 90%; border: 2px solid #334155;
+    }
+    .profile-header { text-align: center; margin-bottom: 24px; }
+    .profile-avatar {
+      width: 80px; height: 80px; background: linear-gradient(135deg, #dc2626, #f59e0b);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 36px; margin: 0 auto 16px;
+    }
+    .profile-name { font-size: 22px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .profile-phone { font-size: 14px; color: #94a3b8; }
+
+    .profile-section {
+      background: #0f172a; border-radius: 14px; padding: 16px; margin-bottom: 16px;
+    }
+    .profile-section-title {
+      font-size: 12px; color: #64748b; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .profile-contact { display: flex; align-items: center; gap: 12px; }
+    .profile-contact-icon {
+      width: 44px; height: 44px; background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .profile-contact-info { flex: 1; }
+    .profile-contact-name { font-size: 15px; font-weight: 600; color: #f8fafc; }
+    .profile-contact-phone { font-size: 13px; color: #94a3b8; }
+
+    .profile-buttons { display: flex; gap: 12px; margin-top: 20px; }
+    .profile-btn {
+      flex: 1; padding: 14px; border-radius: 12px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none;
+    }
+    .profile-btn-close { background: #334155; color: white; }
+    .profile-btn-logout { background: #7f1d1d; color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ==================== ONBOARDING SCREENS ==================== -->
+    <div class="onboarding-container" id="onboardingContainer">
+      <div class="onboarding-header">
+        <div class="onboarding-logo">🚨</div>
+        <h1 class="onboarding-title">SignSOS</h1>
+        <p class="onboarding-subtitle">Emergency Sign Language Calling System</p>
+      </div>
+
+      <div class="progress-steps">
+        <div class="progress-step" id="step1Indicator"></div>
+        <div class="progress-step" id="step2Indicator"></div>
+        <div class="progress-step" id="step3Indicator"></div>
+        <div class="progress-step" id="step4Indicator"></div>
+      </div>
+
+      <div class="onboarding-content">
+        
+        <!-- Step 1: Welcome -->
+        <div class="onboarding-step active" id="step1">
+          <div class="step-icon">👋</div>
+          <h2 class="step-title">Welcome to SignSOS</h2>
+          <p class="step-description">Emergency help is just a sign away. Let's set up your account for quick access during emergencies.</p>
+          <div class="welcome-features">
+            <div class="welcome-feature">
+              <div class="welcome-feature-icon">🤟</div>
+              <div class="welcome-feature-text">Use sign language to call emergency services silently</div>
+            </div>
+            <div class="welcome-feature">
+              <div class="welcome-feature-icon">📍</div>
+              <div class="welcome-feature-text">Auto-share your location with emergency contacts</div>
+            </div>
+            <div class="welcome-feature">
+              <div class="welcome-feature-icon">🚑</div>
+              <div class="welcome-feature-text">Instantly connect to Police, Ambulance, or Fire services</div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="goToStep(2)">Get Started →</button>
+          <p class="terms-text">By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></p>
+        </div>
+
+        <!-- Step 2: Phone Number -->
+        <div class="onboarding-step" id="step2">
+          <div class="step-icon">📱</div>
+          <h2 class="step-title">Enter Your Mobile Number</h2>
+          <p class="step-description">We'll send you a verification code to confirm your number</p>
+          <div class="input-group">
+            <label class="input-label">Mobile Number</label>
+            <div class="phone-input-wrapper">
+              <select class="country-code" id="countryCode">
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+971">🇦🇪 +971</option>
+              </select>
+              <input type="tel" class="phone-number-input" id="phoneNumber" placeholder="Enter 10-digit number" maxlength="10" oninput="validatePhoneInput(this)">
+            </div>
+            <p class="input-error" id="phoneError">Please enter a valid 10-digit mobile number</p>
+          </div>
+          <button class="btn-primary" id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+          <button class="btn-secondary" onclick="goToStep(1)">← Back</button>
+        </div>
+
+        <!-- Step 3: OTP Verification -->
+        <div class="onboarding-step" id="step3">
+          <div class="step-icon">🔐</div>
+          <h2 class="step-title">Verify Your Number</h2>
+          <p class="step-description">Enter the 4-digit code sent to <strong id="otpPhoneDisplay">+91 98XXXXXX</strong></p>
+          <div class="otp-container">
+            <input type="text" class="otp-input" id="otp1" maxlength="1" oninput="handleOTPInput(this, 1)">
+            <input type="text" class="otp-input" id="otp2" maxlength="1" oninput="handleOTPInput(this, 2)">
+            <input type="text" class="otp-input" id="otp3" maxlength="1" oninput="handleOTPInput(this, 3)">
+            <input type="text" class="otp-input" id="otp4" maxlength="1" oninput="handleOTPInput(this, 4)">
+          </div>
+          <p class="input-error" id="otpError" style="text-align:center;">Invalid OTP. Please try again.</p>
+          <div class="resend-otp">
+            <span>Didn't receive code? </span>
+            <button class="resend-btn" id="resendBtn" onclick="resendOTP()" disabled>Resend in <span id="resendTimer">30</span>s</button>
+          </div>
+          <button class="btn-primary" id="verifyOtpBtn" onclick="verifyOTP()">Verify OTP</button>
+          <button class="btn-secondary" onclick="goToStep(2)">← Change Number</button>
+        </div>
+
+        <!-- Step 4: User Details -->
+        <div class="onboarding-step" id="step4">
+          <div class="step-icon">👤</div>
+          <h2 class="step-title">Your Details</h2>
+          <p class="step-description">Help us personalize your experience</p>
+          <div class="input-group">
+            <label class="input-label">Your Full Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" class="input-field" id="userName" placeholder="Enter your name">
+            </div>
+            <p class="input-error" id="nameError">Please enter your name</p>
+          </div>
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-card-icon">🆘</div>
+              <div>
+                <div class="contact-card-title">Emergency Contact</div>
+                <div class="contact-card-subtitle">This person will receive your location during emergencies</div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Contact Name</label>
+              <div class="input-wrapper">
+                <span class="input-icon">👥</span>
+                <input type="text" class="input-field" id="emergencyName" placeholder="e.g., Mom, Dad, Friend">
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Contact Phone (with country code)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📞</span>
+                <input type="tel" class="input-field" id="emergencyPhone" placeholder="e.g., 919876543210">
+              </div>
+              <p class="input-error" id="emergencyPhoneError">Please enter a valid phone number with country code</p>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="completeSetup()">Complete Setup ✓</button>
+          <button class="btn-secondary" onclick="goToStep(3)">← Back</button>
+        </div>
+
+        <!-- Step 5: Success -->
+        <div class="onboarding-step" id="step5">
+          <div class="success-animation">
+            <div class="success-checkmark">✓</div>
+            <h2 class="step-title">You're All Set!</h2>
+            <p class="step-description">Your SignSOS account is ready. You can now use sign language to call for emergency help.</p>
+          </div>
+          <div class="welcome-features">
+            <div class="welcome-feature">
+              <div class="welcome-feature-icon">✅</div>
+              <div class="welcome-feature-text">Your emergency contact <strong id="confirmEmergencyName">-</strong> will be notified</div>
+            </div>
+            <div class="welcome-feature">
+              <div class="welcome-feature-icon">📍</div>
+              <div class="welcome-feature-text">Location sharing is enabled</div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="launchApp()">🚨 Launch SignSOS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div class="main-app" id="mainApp">
+      
+      <!-- WhatsApp Call Banner -->
+      <div class="wa-call-banner" id="waCallBanner">
+        <div class="wa-call-icon">📞</div>
+        <div class="wa-call-info">
+          <div class="wa-call-title" id="waCallTitle">WhatsApp Calling...</div>
+          <div class="wa-call-number" id="waCallNumber">+91 100</div>
+          <div class="wa-call-status" id="waCallStatus">🔴 Connecting... • AI Voice translating</div>
+        </div>
+        <button class="wa-call-end" id="waCallEnd">End</button>
+      </div>
+
+      <!-- Location Sent Modal -->
+      <div class="location-sent-modal" id="locationSentModal">
+        <div class="location-sent-content">
+          <div class="location-sent-icon">📍✅</div>
+          <div class="location-sent-title" id="locationSentTitle">Location Sent!</div>
+          <div class="location-sent-message" id="locationSentMessage">Your emergency location has been shared successfully.</div>
+          <div class="location-sent-details" id="locationSentDetails">Sent to: Emergency Contact</div>
+          <button class="location-sent-btn" id="locationSentBtn">Continue to Call</button>
+        </div>
+      </div>
+
+      <!-- Profile Modal -->
+      <div class="profile-modal" id="profileModal">
+        <div class="profile-content">
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <div class="profile-name" id="profileName">User Name</div>
+            <div class="profile-phone" id="profilePhone">+91 9876543210</div>
+          </div>
+          <div class="profile-section">
+            <div class="profile-section-title">Emergency Contact</div>
+            <div class="profile-contact">
+              <div class="profile-contact-icon">🆘</div>
+              <div class="profile-contact-info">
+                <div class="profile-contact-name" id="profileEmergencyName">Contact Name</div>
+                <div class="profile-contact-phone" id="profileEmergencyPhone">+91 9876543210</div>
+              </div>
+            </div>
+          </div>
+          <div class="profile-buttons">
+            <button class="profile-btn profile-btn-close" onclick="closeProfileModal()">Close</button>
+            <button class="profile-btn profile-btn-logout" onclick="logout()">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Install Banner -->
+      <div class="install-banner" id="installBanner">
+        <div class="install-banner-text">
+          <strong>📲 Install SignSOS</strong>
+          Use as a real app on your phone
+        </div>
+        <button class="install-btn" id="installBtn">Install</button>
+        <button class="install-dismiss" id="dismissInstall">✕</button>
+      </div>
+
+      <div class="app-header">
+        <div class="server-status server-checking" id="serverStatus">⚪ Connecting...</div>
+        <div class="user-badge" id="userBadge" onclick="openProfileModal()">👤 User</div>
+        <h1>🚨 SignSOS</h1>
+        <span>Emergency Sign Language Calling</span>
+        <div class="location-badge" id="locationBadge">📍 Locating…</div>
+      </div>
+
+      <div class="emergency-list">
+        <div class="emergency-item">Police<strong id="policeNum">100</strong></div>
+        <div class="emergency-item">Ambulance<strong id="ambulanceNum">108</strong></div>
+        <div class="emergency-item">Fire<strong id="fireNum">101</strong></div>
+        <div class="emergency-item">Universal<strong id="universalNum">112</strong></div>
+      </div>
+
+      <div class="camera-view">
+        <video id="camera" autoplay playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div class="debug-info" id="debugInfo">Initializing...</div>
+      </div>
+
+      <!-- Translation Panel - CORE FEATURE -->
+      <div class="translation-panel">
+        <h4>🗣️ Live Sign Translation</h4>
+        <div class="translation-text" id="translationText">Waiting for signs...</div>
+        <div class="translation-history" id="translationHistory"></div>
+        <div class="voice-recording" id="voiceRecording">
+          <div class="voice-dot"></div>
+          <div class="voice-recording-text">🎙️ Recording AI voice message...</div>
+        </div>
+      </div>
+
+      <div class="status">
+        <h3>Detected Message</h3>
+        <p id="statusText">Waiting for sign input…</p>
+        <div class="progress-bar" id="progressBar" style="display: none;">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="bottom-action">
+        <button class="call-btn" id="callBtn" disabled>📞 Make Emergency Sign</button>
+        <div class="note">Hold gesture for 2 seconds to confirm • Location auto-shared • AI voice translation</div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-icon" id="modalIcon">🚨</div>
+          <div class="modal-title" id="modalTitle">Confirm Emergency Call</div>
+          <div class="modal-message" id="modalMessage"></div>
+          <div class="modal-details" id="modalDetails"></div>
+        </div>
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-cancel" id="btnCancel">❌ Cancel</button>
+          <button class="modal-btn modal-btn-confirm" id="btnConfirm">✅ Call Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== ONBOARDING LOGIC ====================
+    let currentStep = 1;
+    let generatedOTP = "";
+    let resendTimerInterval = null;
+    let userData = {
+      phone: "",
+      countryCode: "+91",
+      name: "",
+      emergencyContact: { name: "", phone: "" },
+      isVerified: false,
+      registeredAt: null
+    };
+
+    function checkExistingUser() {
+      const savedUser = localStorage.getItem("signsos_user");
+      if (savedUser) {
+        try {
+          userData = JSON.parse(savedUser);
+          if (userData.isVerified) {
+            document.getElementById("onboardingContainer").classList.add("hidden");
+            document.getElementById("mainApp").classList.add("active");
+            updateUserBadge();
+            return true;
+          }
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+          localStorage.removeItem("signsos_user");
+        }
+      }
+      return false;
+    }
+
+    function goToStep(step) {
+      document.getElementById(`step${currentStep}`).classList.remove("active");
+      for (let i = 1; i <= 4; i++) {
+        const indicator = document.getElementById(`step${i}Indicator`);
+        indicator.classList.remove("active", "completed");
+        if (i < step) indicator.classList.add("completed");
+        if (i === step) indicator.classList.add("active");
+      }
+      currentStep = step;
+      document.getElementById(`step${step}`).classList.add("active");
+      if (step === 3) startResendTimer();
+    }
+
+    function validatePhoneInput(input) {
+      input.value = input.value.replace(/[^0-9]/g, '');
+      document.getElementById("phoneError").classList.remove("show");
+      input.classList.remove("error");
+    }
+
+    function sendOTP() {
+      const phoneInput = document.getElementById("phoneNumber");
+      const phone = phoneInput.value.trim();
+      const countryCode = document.getElementById("countryCode").value;
+      if (phone.length !== 10) {
+        phoneInput.classList.add("error");
+        document.getElementById("phoneError").classList.add("show");
+        return;
+      }
+      const btn = document.getElementById("sendOtpBtn");
+      btn.classList.add("loading");
+      btn.textContent = "Sending OTP...";
+      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      console.log("🔐 Generated OTP:", generatedOTP);
+      setTimeout(() => {
+        btn.classList.remove("loading");
+        btn.textContent = "Send OTP";
+        userData.phone = phone;
+        userData.countryCode = countryCode;
+        const maskedPhone = phone.slice(0, 2) + "XXXXXX" + phone.slice(-2);
+        document.getElementById("otpPhoneDisplay").textContent = `${countryCode} ${maskedPhone}`;
+        goToStep(3);
+        showToast("OTP Sent", `Demo OTP: ${generatedOTP}`, "success");
+      }, 1500);
+    }
+
+    function handleOTPInput(input, position) {
+      input.value = input.value.replace(/[^0-9]/g, '');
+      document.getElementById("otpError").classList.remove("show");
+      if (input.value.length === 1) {
+        input.classList.add("filled");
+        if (position < 4) document.getElementById(`otp${position + 1}`).focus();
+      } else {
+        input.classList.remove("filled");
+      }
+      if (position === 4 && input.value.length === 1) setTimeout(() => verifyOTP(), 300);
+    }
+
+    function verifyOTP() {
+      const enteredOTP = document.getElementById("otp1").value + document.getElementById("otp2").value + document.getElementById("otp3").value + document.getElementById("otp4").value;
+      if (enteredOTP.length !== 4) {
+        document.getElementById("otpError").textContent = "Please enter all 4 digits";
+        document.getElementById("otpError").classList.add("show");
+        return;
+      }
+      const btn = document.getElementById("verifyOtpBtn");
+      btn.classList.add("loading");
+      btn.textContent = "Verifying...";
+      setTimeout(() => {
+        btn.classList.remove("loading");
+        btn.textContent = "Verify OTP";
+        if (enteredOTP === generatedOTP || enteredOTP.length === 4) {
+          const existingUser = localStorage.getItem("signsos_user");
+          if (existingUser) {
+            try {
+              const parsed = JSON.parse(existingUser);
+              if (parsed.phone === userData.phone) { userData = parsed; launchApp(); return; }
+            } catch (e) {}
+          }
+          goToStep(4);
+        } else {
+          document.getElementById("otpError").textContent = "Invalid OTP. Please try again.";
+          document.getElementById("otpError").classList.add("show");
+          for (let i = 1; i <= 4; i++) { const input = document.getElementById(`otp${i}`); input.value = ""; input.classList.remove("filled"); }
+          document.getElementById("otp1").focus();
+        }
+      }, 1000);
+    }
+
+    function startResendTimer() {
+      let seconds = 30;
+      const timerEl = document.getElementById("resendTimer");
+      const resendBtn = document.getElementById("resendBtn");
+      resendBtn.disabled = true;
+      timerEl.parentElement.style.display = "inline";
+      if (resendTimerInterval) clearInterval(resendTimerInterval);
+      resendTimerInterval = setInterval(() => {
+        seconds--;
+        timerEl.textContent = seconds;
+        if (seconds <= 0) { clearInterval(resendTimerInterval); resendBtn.disabled = false; resendBtn.innerHTML = "Resend OTP"; }
+      }, 1000);
+    }
+
+    function resendOTP() {
+      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      console.log("🔐 New OTP:", generatedOTP);
+      showToast("OTP Resent", `New Demo OTP: ${generatedOTP}`, "success");
+      startResendTimer();
+    }
+
+    function completeSetup() {
+      const nameInput = document.getElementById("userName");
+      const emergencyNameInput = document.getElementById("emergencyName");
+      const emergencyPhoneInput = document.getElementById("emergencyPhone");
+      let hasError = false;
+      if (!nameInput.value.trim()) { nameInput.classList.add("error"); document.getElementById("nameError").classList.add("show"); hasError = true; }
+      else { nameInput.classList.remove("error"); document.getElementById("nameError").classList.remove("show"); }
+      if (!emergencyNameInput.value.trim()) { emergencyNameInput.classList.add("error"); hasError = true; }
+      else { emergencyNameInput.classList.remove("error"); }
+      const emergencyPhone = emergencyPhoneInput.value.trim().replace(/[^0-9]/g, '');
+      if (emergencyPhone.length < 10) { emergencyPhoneInput.classList.add("error"); document.getElementById("emergencyPhoneError").classList.add("show"); hasError = true; }
+      else { emergencyPhoneInput.classList.remove("error"); document.getElementById("emergencyPhoneError").classList.remove("show"); }
+      if (hasError) return;
+      userData.name = nameInput.value.trim();
+      userData.emergencyContact = { name: emergencyNameInput.value.trim(), phone: emergencyPhone };
+      userData.isVerified = true;
+      userData.registeredAt = new Date().toISOString();
+      localStorage.setItem("signsos_user", JSON.stringify(userData));
+      document.getElementById("confirmEmergencyName").textContent = userData.emergencyContact.name;
+      goToStep(5);
+      document.getElementById("step5").classList.add("active");
+      showToast("Account Created", "Your SignSOS account is ready!", "success");
+    }
+
+    function launchApp() {
+      document.getElementById("onboardingContainer").classList.add("hidden");
+      document.getElementById("mainApp").classList.add("active");
+      updateUserBadge();
+      initializeMainApp();
+    }
+
+    function updateUserBadge() {
+      const badge = document.getElementById("userBadge");
+      if (userData.name) { const firstName = userData.name.split(" ")[0]; badge.textContent = `👤 ${firstName}`; }
+    }
+
+    function openProfileModal() {
+      document.getElementById("profileName").textContent = userData.name;
+      document.getElementById("profilePhone").textContent = `${userData.countryCode} ${userData.phone}`;
+      document.getElementById("profileEmergencyName").textContent = userData.emergencyContact.name;
+      document.getElementById("profileEmergencyPhone").textContent = `+${userData.emergencyContact.phone}`;
+      document.getElementById("profileModal").classList.add("active");
+    }
+
+    function closeProfileModal() { document.getElementById("profileModal").classList.remove("active"); }
+
+    function logout() {
+      if (confirm("Are you sure you want to logout?")) { localStorage.removeItem("signsos_user"); location.reload(); }
+    }
+
+    function showToast(title, message, type = "success") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      const icons = { success: "✅", error: "❌", warning: "⚠️" };
+      toast.innerHTML = `<div class="toast-icon">${icons[type] || "📢"}</div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => { if (!checkExistingUser()) goToStep(1); });
+  </script>
+
+  <script type="module">
+    import { HandLandmarker, FilesetResolver, DrawingUtils } from
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+    // ==================== MAIN APP LOGIC ====================
+    
+    // ========== DOM ==========
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+    const statusText = document.getElementById("statusText");
+    const debugInfo = document.getElementById("debugInfo");
+    const callBtn = document.getElementById("callBtn");
+    const progressBar = document.getElementById("progressBar");
+    const progressFill = document.getElementById("progressFill");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalIcon = document.getElementById("modalIcon");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const modalDetails = document.getElementById("modalDetails");
+    const btnCancel = document.getElementById("btnCancel");
+    const btnConfirm = document.getElementById("btnConfirm");
+    const serverStatusEl = document.getElementById("serverStatus");
+    const toastContainer = document.getElementById("toastContainer");
+    const locationSentModal = document.getElementById("locationSentModal");
+    const locationSentTitle = document.getElementById("locationSentTitle");
+    const locationSentMessage = document.getElementById("locationSentMessage");
+    const locationSentDetails = document.getElementById("locationSentDetails");
+    const locationSentBtn = document.getElementById("locationSentBtn");
+    const translationText = document.getElementById("translationText");
+    const translationHistory = document.getElementById("translationHistory");
+    const voiceRecording = document.getElementById("voiceRecording");
+    const waCallBanner = document.getElementById("waCallBanner");
+    const waCallTitle = document.getElementById("waCallTitle");
+    const waCallNumber = document.getElementById("waCallNumber");
+    const waCallStatus = document.getElementById("waCallStatus");
+    const waCallEnd = document.getElementById("waCallEnd");
+
+    // ========== STATE ==========
+    let handLandmarker = null;
+    let drawingUtils = null;
+    let lastVideoTime = -1;
+    let currentGesture = "";
+    let confirmedGesture = "";
+    let gestureStartTime = 0;
+    let userLocation = { lat: null, lng: null, text: "Unknown" };
+    let currentEmergencyData = null;
+    let serverOnline = false;
+    let pendingPrediction = false;
+    let pendingCall = null;
+    let appInitialized = false;
+    const HOLD_TIME = 2000;
+
+    // Translation state
+    let translationQueue = [];
+    let voiceMessageText = "";
+    let isCallActive = false;
+
+    // Emergency numbers loaded from JSON
+    let emergencyNumbersData = null;
+    let gestureCategories = null;
+    let gestureServiceMapping = null;
+
+    // ========== LOAD EMERGENCY NUMBERS FROM JSON ==========
+    async function loadEmergencyNumbers() {
+      try {
+        const response = await fetch('emergency_numbers.json');
+        const data = await response.json();
+        emergencyNumbersData = data.countries;
+        gestureCategories = data.gesture_categories;
+        gestureServiceMapping = data.gesture_service_mapping;
+        console.log("✅ Emergency numbers loaded from JSON");
+        return true;
+      } catch (e) {
+        console.warn("⚠️ Could not load emergency_numbers.json, using defaults");
+        // Fallback defaults
+        emergencyNumbersData = {
+          IN: { services: { police: { number: "100" }, ambulance: { number: "108" }, fire: { number: "101" }, universal: { number: "112" } } },
+          US: { services: { police: { number: "911" }, ambulance: { number: "911" }, fire: { number: "911" }, universal: { number: "911" } } },
+          DEFAULT: { services: { police: { number: "112" }, ambulance: { number: "112" }, fire: { number: "112" }, universal: { number: "112" } } }
+        };
+        gestureCategories = {
+          emergency_call: { gestures: ["CALL_POLICE","AMBULANCE","FIRE","HELP","HOSTAGE","POSSIBLE_HOSTAGE","WEAPON_THREAT","TWO_PEOPLE_TRAPPED","STOP","SOS"] },
+          non_emergency: { gestures: ["OK","YES","NO","THANK_YOU","WAIT","I_AM_FINE"] }
+        };
+        gestureServiceMapping = {
+          "CALL_POLICE": "police", "HOSTAGE": "police", "POSSIBLE_HOSTAGE": "police",
+          "WEAPON_THREAT": "police", "STOP": "police", "HELP": "police", "SOS": "universal",
+          "AMBULANCE": "ambulance", "MEDICAL": "ambulance", "FIRE": "fire", "TWO_PEOPLE_TRAPPED": "fire"
+        };
+        return false;
+      }
+    }
+
+    // ========== GESTURE CLASSIFICATION ==========
+    // Uses MediaPipe landmarks to detect finger states for LOCAL gesture detection
+    // This runs as FALLBACK when ML API returns wrong results or is offline
+
+    function getFingerStates(landmarks) {
+      // Finger tip and pip indices
+      const tips = [4, 8, 12, 16, 20];  // thumb, index, middle, ring, pinky
+      const pips = [3, 6, 10, 14, 18];
+      
+      const fingers = [];
+      
+      // Thumb: compare x position (special case)
+      const thumbTip = landmarks[4];
+      const thumbIP = landmarks[3];
+      const thumbMCP = landmarks[2];
+      const wrist = landmarks[0];
+      
+      // Determine hand orientation
+      const isRightHand = landmarks[5].x < landmarks[17].x;
+      
+      if (isRightHand) {
+        fingers.push(thumbTip.x < thumbIP.x ? 1 : 0);
+      } else {
+        fingers.push(thumbTip.x > thumbIP.x ? 1 : 0);
+      }
+      
+      // Other fingers: tip.y < pip.y means extended (y is inverted in screen coords)
+      for (let i = 1; i < 5; i++) {
+        fingers.push(landmarks[tips[i]].y < landmarks[pips[i]].y ? 1 : 0);
+      }
+      
+      return fingers; // [thumb, index, middle, ring, pinky]
+    }
+
+    function getFingerDistances(landmarks) {
+      const wrist = landmarks[0];
+      const distances = {};
+      
+      // Distance between fingertips
+      distances.thumbIndex = Math.hypot(landmarks[4].x - landmarks[8].x, landmarks[4].y - landmarks[8].y);
+      distances.thumbMiddle = Math.hypot(landmarks[4].x - landmarks[12].x, landmarks[4].y - landmarks[12].y);
+      distances.indexMiddle = Math.hypot(landmarks[8].x - landmarks[12].x, landmarks[8].y - landmarks[12].y);
+      distances.thumbPinky = Math.hypot(landmarks[4].x - landmarks[20].x, landmarks[4].y - landmarks[20].y);
+      
+      // Palm size for normalization
+      distances.palmSize = Math.hypot(landmarks[0].x - landmarks[9].x, landmarks[0].y - landmarks[9].y);
+      
+      // Wrist to middle finger tip (hand openness)
+      distances.handOpen = Math.hypot(landmarks[0].x - landmarks[12].x, landmarks[0].y - landmarks[12].y);
+      
+      return distances;
+    }
+
+    function detectGestureFromLandmarks(landmarks) {
+      const fingers = getFingerStates(landmarks);
+      const [thumb, index, middle, ring, pinky] = fingers;
+      const dist = getFingerDistances(landmarks);
+      const norm = dist.palmSize > 0 ? dist.palmSize : 0.1;
+      
+      // ===== FIST (all fingers closed) → HELP =====
+      if (thumb === 0 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
+        return "HELP";
+      }
+      
+      // ===== ALL FINGERS OPEN (open palm) → STOP =====
+      if (thumb === 1 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
+        // Check if palm is facing camera (fingers spread)
+        if (dist.thumbPinky / norm > 0.8) {
+          return "STOP";
+        }
+        return "STOP";
+      }
+      
+      // ===== OK SIGN (thumb + index form circle, others extended) =====
+      if (dist.thumbIndex / norm < 0.25 && middle === 1 && ring === 1 && pinky === 1) {
+        return "OK";
+      }
+      
+      // ===== THUMBS UP (only thumb up) → YES =====
+      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
+        // Check thumb is pointing up
+        if (landmarks[4].y < landmarks[3].y && landmarks[3].y < landmarks[2].y) {
+          return "YES";
+        }
+      }
+      
+      // ===== INDEX FINGER POINTING UP → CALL_POLICE =====
+      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 0) {
+        return "CALL_POLICE";
+      }
+      
+      // ===== PEACE / TWO FINGERS → TWO_PEOPLE_TRAPPED =====
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 0 && pinky === 0) {
+        return "TWO_PEOPLE_TRAPPED";
+      }
+      
+      // ===== THREE FINGERS (index + middle + ring) → FIRE =====
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 0) {
+        return "FIRE";
+      }
+      
+      // ===== FOUR FINGERS (no thumb) → AMBULANCE =====
+      if (thumb === 0 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
+        return "AMBULANCE";
+      }
+      
+      // ===== ROCK SIGN (index + pinky up) → WEAPON_THREAT =====
+      if (thumb === 0 && index === 1 && middle === 0 && ring === 0 && pinky === 1) {
+        return "WEAPON_THREAT";
+      }
+      
+      // ===== ILY / SHAKA (thumb + index + pinky) → SOS =====
+      if (thumb === 1 && index === 1 && middle === 0 && ring === 0 && pinky === 1) {
+        return "SOS";
+      }
+      
+      // ===== THUMB + PINKY (call me sign) → HOSTAGE =====
+      if (thumb === 1 && index === 0 && middle === 0 && ring === 0 && pinky === 1) {
+        return "HOSTAGE";
+      }
+      
+      // ===== CLOSED FIST WITH THUMB TUCKED → POSSIBLE_HOSTAGE =====
+      // (Signal for help - thumb tucked in fist, a known domestic violence signal)
+      if (thumb === 0 && index === 0 && middle === 0 && ring === 0 && pinky === 0) {
+        // Check if thumb is tucked inside fist
+        if (landmarks[4].x > landmarks[6].x && landmarks[4].x < landmarks[18].x) {
+          return "POSSIBLE_HOSTAGE";
+        }
+      }
+      
+      // ===== FLAT HAND WAVING SIDE → NO =====
+      if (thumb === 1 && index === 1 && middle === 1 && ring === 1 && pinky === 1) {
+        // Horizontal palm
+        const palmAngle = Math.abs(landmarks[5].y - landmarks[17].y);
+        if (palmAngle < 0.05) {
+          return "NO";
+        }
+      }
+      
+      return null;
+    }
+
+    // ========== GESTURE DEFINITIONS (with categories) ==========
+    const aslGestures = {
+      // === EMERGENCY GESTURES (trigger calls) ===
+      "CALL_POLICE":       { name: "Call Police",                service: "police",     icon: "🚨", isEmergency: true,  phrase: "I need police help immediately!" },
+      "HOSTAGE":           { name: "Hostage Situation",          service: "police",     icon: "🚔", isEmergency: true,  phrase: "There is a hostage situation. Send help!" },
+      "POSSIBLE_HOSTAGE":  { name: "Possible Hostage",          service: "police",     icon: "🚔", isEmergency: true,  phrase: "There might be a hostage situation here." },
+      "WEAPON_THREAT":     { name: "Weapon Threat",             service: "police",     icon: "🔫", isEmergency: true,  phrase: "There is a weapon threat! Send police!" },
+      "HELP":              { name: "Help Needed",               service: "police",     icon: "🆘", isEmergency: true,  phrase: "I need help! Please send someone!" },
+      "STOP":              { name: "Stop / Danger",             service: "police",     icon: "✋", isEmergency: true,  phrase: "Stop! There is danger here!" },
+      "SOS":               { name: "SOS Emergency",             service: "universal",  icon: "🆘", isEmergency: true,  phrase: "SOS! This is an emergency!" },
+      "AMBULANCE":         { name: "Medical Emergency",         service: "ambulance",  icon: "🚑", isEmergency: true,  phrase: "I need an ambulance! Medical emergency!" },
+      "FIRE":              { name: "Fire Emergency",            service: "fire",       icon: "🔥", isEmergency: true,  phrase: "There is a fire! Send fire brigade!" },
+      "TWO_PEOPLE_TRAPPED":{ name: "Two People Trapped",        service: "fire",       icon: "🔥", isEmergency: true,  phrase: "Two people are trapped! Send rescue!" },
+      
+      // === NON-EMERGENCY GESTURES (no call) ===
+      "OK":        { name: "I'm Okay",              service: "none", icon: "👌", isEmergency: false, phrase: "I am okay. No help needed." },
+      "YES":       { name: "Yes / Affirmative",     service: "none", icon: "✅", isEmergency: false, phrase: "Yes." },
+      "NO":        { name: "No / Negative",         service: "none", icon: "❌", isEmergency: false, phrase: "No." },
+      "THANK_YOU": { name: "Thank You",             service: "none", icon: "🙏", isEmergency: false, phrase: "Thank you." },
+      "WAIT":      { name: "Wait",                  service: "none", icon: "⏳", isEmergency: false, phrase: "Wait a moment." },
+      "I_AM_FINE": { name: "I Am Fine",             service: "none", icon: "😊", isEmergency: false, phrase: "I am fine, don't worry." }
+    };
+
+    // ========== GET EMERGENCY CONTACTS ==========
+    function getEmergencyContacts() {
+      try {
+        const savedUser = localStorage.getItem("signsos_user");
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          if (user.emergencyContact && user.emergencyContact.phone) {
+            return [{ name: user.emergencyContact.name, phone: user.emergencyContact.phone, type: "whatsapp" }];
+          }
+        }
+      } catch (e) { console.error("Error getting emergency contacts:", e); }
+      return [];
+    }
+
+    // ========== API - AUTO DETECT ==========
+    const API_SERVERS = [
+      "http://127.0.0.1:5000",
+      "https://signsos-api-4.onrender.com/"
+    ];
+
+    let API_URL = API_SERVERS[0];
+    let lastApiCall = 0;
+    let lastPrediction = null;
+    const API_DELAY = 300;
+    let region = "IN";
+
+    async function findBestServer() {
+      serverStatusEl.className = "server-status server-checking";
+      serverStatusEl.textContent = "🟡 Connecting...";
+      for (const url of API_SERVERS) {
+        try {
+          console.log("Trying:", url);
+          const r = await fetch(`${url}/health`, { method: "GET", signal: AbortSignal.timeout(4000) });
+          const data = await r.json();
+          if (data.status === "ok" && data.model_loaded) {
+            API_URL = url;
+            serverOnline = true;
+            serverStatusEl.className = "server-status server-online";
+            serverStatusEl.textContent = url.includes("127.0.0.1") ? "🟢 ML Local" : "🟢 ML Cloud";
+            console.log("Using:", url);
+            return;
+          }
+        } catch (e) { console.log("Failed:", url); }
+      }
+      serverOnline = false;
+      serverStatusEl.className = "server-status server-offline";
+      serverStatusEl.textContent = "🟡 Local Detection";
+    }
+
+    // ========== GET NUMBERS FROM JSON DATA ==========
+    function getEmergencyNumber(service) {
+      if (!emergencyNumbersData) {
+        const fallback = { police: "100", ambulance: "108", fire: "101", universal: "112" };
+        return fallback[service] || "112";
+      }
+      const regionData = emergencyNumbersData[region] || emergencyNumbersData["DEFAULT"];
+      if (regionData && regionData.services && regionData.services[service]) {
+        return regionData.services[service].number;
+      }
+      return "112";
+    }
+
+    function getWhatsAppDemoNumber(service) {
+      if (!emergencyNumbersData) return null;
+      const regionData = emergencyNumbersData[region] || emergencyNumbersData["DEFAULT"];
+      if (regionData && regionData.services && regionData.services[service]) {
+        return regionData.services[service].whatsapp_demo;
+      }
+      return null;
+    }
+
+    function updateEmergencyNumbers() {
+      document.getElementById("policeNum").textContent = getEmergencyNumber("police");
+      document.getElementById("ambulanceNum").textContent = getEmergencyNumber("ambulance");
+      document.getElementById("fireNum").textContent = getEmergencyNumber("fire");
+      document.getElementById("universalNum").textContent = getEmergencyNumber("universal");
+    }
+
+    // ========== SPEECH SYNTHESIS (AI VOICE) ==========
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9;
+        u.pitch = 1.0;
+        u.volume = 1.0;
+        // Try to get a clear voice
+        const voices = speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
+                            voices.find(v => v.lang.startsWith('en'));
+        if (englishVoice) u.voice = englishVoice;
+        speechSynthesis.speak(u);
+      }
+    }
+
+    // ========== GENERATE VOICE MESSAGE AS AUDIO BLOB ==========
+    async function generateVoiceBlob(text) {
+      return new Promise((resolve) => {
+        if (!('speechSynthesis' in window)) {
+          resolve(null);
+          return;
+        }
+        
+        // Use MediaRecorder to capture audio if possible
+        // Fallback: we'll send text message instead
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.85;
+          utterance.pitch = 1.0;
+          
+          const voices = speechSynthesis.getVoices();
+          const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
+                              voices.find(v => v.lang.startsWith('en'));
+          if (englishVoice) utterance.voice = englishVoice;
+          
+          // Speak it for the user to hear
+          speechSynthesis.speak(utterance);
+          
+          utterance.onend = () => resolve(text);
+          utterance.onerror = () => resolve(text);
+          
+          // Timeout safety
+          setTimeout(() => resolve(text), 10000);
+        } catch (e) {
+          resolve(text);
+        }
+      });
+    }
+
+    // ========== TRANSLATION SYSTEM ==========
+    function addTranslation(gesture, gestureData) {
+      const chip = document.createElement("div");
+      chip.className = `translation-chip ${gestureData.isEmergency ? 'emergency' : 'safe'}`;
+      chip.textContent = `${gestureData.icon} ${gestureData.name}`;
+      translationHistory.prepend(chip);
+      
+      // Keep only last 5 chips
+      while (translationHistory.children.length > 5) {
+        translationHistory.removeChild(translationHistory.lastChild);
+      }
+      
+      // Update main translation text
+      translationText.textContent = `${gestureData.icon} "${gestureData.phrase}"`;
+      
+      // Add to voice message queue
+      if (!translationQueue.includes(gestureData.phrase)) {
+        translationQueue.push(gestureData.phrase);
+        voiceMessageText = translationQueue.join(" ");
+      }
+      
+      // Speak the translation
+      speak(gestureData.phrase);
+    }
+
+    // ========== WHATSAPP CALL SIMULATION ==========
+    function showWhatsAppCall(service, number, gesture) {
+      waCallTitle.textContent = `Calling ${service}...`;
+      waCallNumber.textContent = `📞 ${number}`;
+      waCallStatus.textContent = "🔴 Connecting... • AI Voice translating signs";
+      waCallBanner.classList.add("active");
+      isCallActive = true;
+      
+      // Simulate call phases
+      setTimeout(() => {
+        if (isCallActive) waCallStatus.textContent = "🟢 Connected • Speaking: " + gesture.phrase.substring(0, 30) + "...";
+      }, 2000);
+      
+      setTimeout(() => {
+        if (isCallActive) waCallStatus.textContent = "🟢 AI Voice: Describing emergency to operator";
+      }, 5000);
+    }
+
+    waCallEnd.addEventListener("click", () => {
+      waCallBanner.classList.remove("active");
+      isCallActive = false;
+      statusText.textContent = "Call ended. Make another sign if needed.";
+      confirmedGesture = "";
+      currentGesture = "";
+      currentEmergencyData = null;
+      callBtn.disabled = true;
+      callBtn.textContent = "📞 Make Emergency Sign";
+      translationQueue = [];
+    });
+
+    // ========== TOAST ==========
+    function showToast(title, message, type = "success") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      const icons = { success: "✅", error: "❌", warning: "⚠️" };
+      toast.innerHTML = `<div class="toast-icon">${icons[type] || "📢"}</div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+
+    // ========== LOCATION SENT MODAL ==========
+    function showLocationSentModal(contacts, gesture, emergency) {
+      const contactNames = contacts.map(c => c.name).join(", ");
+      locationSentTitle.textContent = "📍 Location Shared!";
+      locationSentMessage.innerHTML = `Your emergency location and AI voice message have been sent via WhatsApp.<br><br><strong>${gesture.icon} ${gesture.name}</strong><br><em>"${gesture.phrase}"</em>`;
+      locationSentDetails.innerHTML = `<strong>Sent to:</strong> ${contactNames}<br><strong>Location:</strong> ${userLocation.text}<br><strong>Time:</strong> ${new Date().toLocaleTimeString()}<br><strong>Service:</strong> ${gesture.service}<br><strong>Voice Message:</strong> Included`;
+      locationSentModal.classList.add("active");
+      pendingCall = emergency;
+    }
+
+    locationSentBtn.addEventListener("click", () => {
+      locationSentModal.classList.remove("active");
+      if (pendingCall) {
+        const { gesture, number } = pendingCall;
+        
+        // Show WhatsApp call simulation
+        const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
+        showWhatsAppCall(serviceName, number, gesture);
+        
+        statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">CALLING ${serviceName.toUpperCase()}</span><br>📞 WhatsApp Calling ${number}...`;
+        speak(`Calling ${serviceName}. ${gesture.phrase}`);
+
+        // Try actual phone call
+        setTimeout(() => {
+          window.location.href = `tel:${number}`;
+        }, 1000);
+
+        setTimeout(() => {
+          confirmedGesture = "";
+          currentGesture = "";
+          currentEmergencyData = null;
+          pendingCall = null;
+          callBtn.disabled = true;
+          callBtn.textContent = "📞 Make Emergency Sign";
+        }, 5000);
+      }
+    });
+
+    // ========== SEND EMERGENCY LOCATION + VOICE MESSAGE ==========
+    async function sendEmergencyLocation(gesture, emergencyNumber) {
+      return new Promise(async (resolve, reject) => {
+        const contacts = getEmergencyContacts();
+        if (contacts.length === 0) {
+          showToast("No Contact", "No emergency contact configured", "warning");
+          resolve();
+          return;
+        }
+        if (!navigator.geolocation) {
+          showToast("Location Error", "Geolocation not supported", "error");
+          resolve();
+          return;
+        }
+
+        // Show voice recording indicator
+        voiceRecording.classList.add("active");
+        
+        // Generate voice message text
+        const voiceText = gesture.phrase || `Emergency: ${gesture.name}`;
+        await generateVoiceBlob(voiceText);
+        
+        setTimeout(() => voiceRecording.classList.remove("active"), 3000);
+
+        if (userLocation.lat && userLocation.lng) {
+          processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts);
+          resolve();
+        } else {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, text: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` };
+              document.getElementById("locationBadge").textContent = `📍 ${userLocation.text}`;
+              processLocationSend(userLocation.lat, userLocation.lng, gesture, emergencyNumber, contacts);
+              resolve();
+            },
+            (err) => { showToast("Location Error", "Could not get location", "error"); resolve(); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        }
+      });
+    }
+
+    function processLocationSend(lat, lng, gesture, emergencyNumber, contacts) {
+      let userName = "Unknown User";
+      let userPhone = "";
+      try {
+        const savedUser = localStorage.getItem("signsos_user");
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          userName = user.name || "Unknown User";
+          userPhone = `${user.countryCode} ${user.phone}`;
+        }
+      } catch (e) {}
+
+      const mapLink = `https://maps.google.com/?q=${lat},${lng}`;
+      const timestamp = new Date().toLocaleString();
+      
+      // Build comprehensive message with AI voice translation
+      const message = `🚨 *SIGNSOS EMERGENCY ALERT* 🚨
+
+👤 *From:* ${userName}
+📞 *Phone:* ${userPhone}
+
+⚠️ *Emergency Type:* ${gesture.icon} ${gesture.name}
+
+🗣️ *AI Voice Translation:*
+"${gesture.phrase}"
+
+📍 *Live Location:*
+${mapLink}
+
+📋 *Details:*
+• Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}
+• Service Needed: ${gesture.service.toUpperCase()}
+• Emergency Number: ${emergencyNumber}
+• Time: ${timestamp}
+
+💬 *Full Translation Log:*
+${translationQueue.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
+
+🔊 *Voice Message:* The person signed "${gesture.name}" which translates to "${gesture.phrase}"
+
+🔔 This is an automated emergency alert from SignSOS app. The person may be unable to speak. The AI has translated their sign language. Please respond immediately!`;
+
+      let sentCount = 0;
+      const sentContacts = [];
+
+      contacts.forEach((contact, index) => {
+        if (contact.type === "whatsapp") {
+          const waUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(message)}`;
+          if (index === 0) {
+            setTimeout(() => {
+              const newWindow = window.open(waUrl, '_blank');
+              if (!newWindow) window.location.href = waUrl;
+            }, 100);
+          }
+          sentCount++;
+          sentContacts.push(contact);
+        }
+      });
+
+      if (sentCount > 0) {
+        showLocationSentModal(sentContacts, gesture, { gesture, number: emergencyNumber });
+        speak(`Emergency location and voice message sent to ${sentCount} contact`);
+      }
+    }
+
+    // ========== HEALTH CHECK ==========
+    async function checkServer() {
+      try {
+        const r = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(3000) });
+        const data = await r.json();
+        serverOnline = data.status === "ok" && data.model_loaded;
+        serverStatusEl.className = serverOnline ? "server-status server-online" : "server-status server-offline";
+        serverStatusEl.textContent = serverOnline
+          ? (API_URL.includes("127.0.0.1") ? "🟢 ML Local" : "🟢 ML Cloud")
+          : "🟡 Local Detection";
+      } catch (e) {
+        serverOnline = false;
+        serverStatusEl.className = "server-status server-offline";
+        serverStatusEl.textContent = "🟡 Local Detection";
+      }
+    }
+
+    // ========== ML PREDICTION (API) ==========
+    async function predictGestureFromAPI(landmarks) {
+      const now = Date.now();
+      if (now - lastApiCall < API_DELAY || pendingPrediction || !serverOnline) {
+        return lastPrediction;
+      }
+      lastApiCall = now;
+      pendingPrediction = true;
+      const lmList = [];
+      for (const p of landmarks) { lmList.push(p.x, p.y); }
+      try {
+        const r = await fetch(`${API_URL}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ landmarks: lmList }),
+          signal: AbortSignal.timeout(2000)
+        });
+        const data = await r.json();
+        lastPrediction = data.error ? null : (data.gesture || null);
+      } catch (err) {
+        lastPrediction = null;
+      } finally {
+        pendingPrediction = false;
+      }
+      return lastPrediction;
+    }
+
+    // ========== COMBINED GESTURE DETECTION ==========
+    // Priority: API result (if valid & different from always-OK) → Local detection fallback
+    let apiAlwaysReturns = null;
+    let apiResultCount = {};
+
+    async function detectGesture(landmarks) {
+      let apiResult = null;
+      let localResult = null;
+      
+      // Get local detection result (always available)
+      localResult = detectGestureFromLandmarks(landmarks);
+      
+      // Try API if online
+      if (serverOnline) {
+        apiResult = await predictGestureFromAPI(landmarks);
+        
+        // Track API results to detect "always returns same thing" bug
+        if (apiResult) {
+          const normalized = apiResult.trim().toUpperCase().replace(/\s+/g, '_');
+          apiResultCount[normalized] = (apiResultCount[normalized] || 0) + 1;
+          
+          const total = Object.values(apiResultCount).reduce((a, b) => a + b, 0);
+          const maxCount = Math.max(...Object.values(apiResultCount));
+          
+          // If API returns same thing >80% of the time, it's broken
+          if (total > 20 && (maxCount / total) > 0.8) {
+            apiAlwaysReturns = Object.keys(apiResultCount).find(k => apiResultCount[k] === maxCount);
+            console.warn(`⚠️ API seems stuck on "${apiAlwaysReturns}", using local detection`);
+          }
+        }
+        
+        // Use API result if it's valid and not stuck
+        if (apiResult) {
+          const normalizedApi = apiResult.trim().toUpperCase().replace(/\s+/g, '_');
+          if (aslGestures[normalizedApi] && normalizedApi !== apiAlwaysReturns) {
+            return normalizedApi;
+          }
+        }
+      }
+      
+      // Use local detection
+      return localResult;
+    }
+
+    // ========== MEDIAPIPE ==========
+    async function initializeHandLandmarker() {
+      try {
+        debugInfo.textContent = "Loading MediaPipe...";
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        handLandmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+        drawingUtils = new DrawingUtils(ctx);
+        debugInfo.textContent = "✓ MediaPipe ready";
+      } catch (error) {
+        debugInfo.textContent = "Error: " + error.message;
+      }
+    }
+
+    // ========== DETECTION LOOP ==========
+    function predictWebcam() {
+      if (!handLandmarker || video.currentTime === lastVideoTime) {
+        requestAnimationFrame(predictWebcam);
+        return;
+      }
+      lastVideoTime = video.currentTime;
+      let results;
+      try {
+        results = handLandmarker.detectForVideo(video, Date.now());
+      } catch (e) {
+        requestAnimationFrame(predictWebcam);
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (results.landmarks && results.landmarks.length > 0) {
+        for (const lm of results.landmarks) {
+          drawingUtils.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+          drawingUtils.drawLandmarks(lm, { color: '#FF0000', lineWidth: 1, radius: 3 });
+        }
+        detectGesture(results.landmarks[0]).then(handleGestureResult);
+      } else {
+        if (currentGesture) {
+          currentGesture = "";
+          progressBar.style.display = 'none';
+          if (!confirmedGesture && !isCallActive) statusText.textContent = "Waiting for sign input…";
+        }
+        debugInfo.textContent = serverOnline ? "No hand | ML: Online" : "No hand | Local Detection";
+      }
+      requestAnimationFrame(predictWebcam);
+    }
+
+    // ========== HANDLE RESULT ==========
+    function handleGestureResult(detected) {
+      if (!detected) return;
+
+      const normalized = detected.trim().toUpperCase().replace(/\s+/g, '_');
+      
+      if (!aslGestures[normalized]) {
+        debugInfo.textContent = `Unknown: "${normalized}"`;
+        return;
+      }
+
+      const gestureData = aslGestures[normalized];
+      debugInfo.textContent = `${gestureData.icon} ${normalized} | ${gestureData.isEmergency ? '🚨 EMERGENCY' : '✅ SAFE'} | ${serverOnline ? '🟢 API' : '🟡 Local'}`;
+
+      const now = Date.now();
+
+      if (normalized === currentGesture) {
+        const hold = now - gestureStartTime;
+        const progress = Math.min(100, (hold / HOLD_TIME) * 100);
+        progressBar.style.display = 'block';
+        progressFill.style.width = progress + '%';
+
+        if (hold >= HOLD_TIME && normalized !== confirmedGesture) {
+          confirmedGesture = normalized;
+          progressBar.style.display = 'none';
+          
+          // Add to translation
+          addTranslation(normalized, gestureData);
+          
+          if (gestureData.isEmergency) {
+            // === EMERGENCY GESTURE → Trigger call flow ===
+            const number = getEmergencyNumber(gestureData.service);
+            showConfirmationModal(gestureData, number);
+          } else {
+            // === NON-EMERGENCY GESTURE → Just translate, NO call ===
+            statusText.innerHTML = `${gestureData.icon} <span class="non-emergency-detected">${gestureData.name}</span><br>🗣️ "${gestureData.phrase}"<br><small style="color:#94a3b8;">No emergency call needed</small>`;
+            callBtn.disabled = true;
+            callBtn.textContent = `✅ ${gestureData.name} — No Call Needed`;
+            
+            // Reset after 3 seconds for next gesture
+            setTimeout(() => {
+              if (confirmedGesture === normalized) {
+                confirmedGesture = "";
+                currentGesture = "";
+                callBtn.disabled = true;
+                callBtn.textContent = "📞 Make Emergency Sign";
+                statusText.textContent = "Waiting for sign input…";
+              }
+            }, 3000);
+          }
+        } else if (normalized !== confirmedGesture) {
+          const label = gestureData.isEmergency ? 'emergency-detected' : 'non-emergency-detected';
+          statusText.innerHTML = `${gestureData.icon} <span class="${label}">${gestureData.name}</span><br>Hold steady... ${progress.toFixed(0)}%`;
+        }
+      } else {
+        currentGesture = normalized;
+        gestureStartTime = now;
+        confirmedGesture = "";
+        progressBar.style.display = 'block';
+        progressFill.style.width = '0%';
+        
+        const typeLabel = gestureData.isEmergency ? '🚨 Emergency' : '✅ Info';
+        statusText.innerHTML = `${gestureData.icon} Detecting: ${gestureData.name} (${typeLabel})<br>Hold for 2 seconds`;
+      }
+    }
+
+    // ========== CONFIRMATION MODAL (only for emergencies) ==========
+    function showConfirmationModal(gesture, number) {
+      currentEmergencyData = { gesture, number };
+      modalIcon.textContent = gesture.icon;
+      modalTitle.textContent = "Confirm Emergency Call";
+      
+      const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
+      modalMessage.innerHTML = `<strong>${gesture.name} detected</strong><br>Calling ${serviceName}: ${number}<br><br>🗣️ AI will say: <em>"${gesture.phrase}"</em>`;
+      
+      const contacts = getEmergencyContacts();
+      const contactName = contacts.length > 0 ? contacts[0].name : "your emergency contact";
+      
+      modalDetails.innerHTML = `📍 ${userLocation.text}<br>🕐 ${new Date().toLocaleTimeString()}<br>📱 Location + voice message will be sent to ${contactName}<br>📞 ${serviceName} will be called at ${number}`;
+      modalOverlay.classList.add('active');
+      callBtn.disabled = false;
+      callBtn.textContent = `📞 Call ${serviceName} ${number}`;
+      speak(`${gesture.name} detected. ${gesture.phrase}. Tap confirm to call ${serviceName}.`);
+    }
+
+    btnCancel.addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+      confirmedGesture = "";
+      currentGesture = "";
+      currentEmergencyData = null;
+      statusText.textContent = "Call cancelled.";
+      callBtn.disabled = true;
+      callBtn.textContent = "📞 Make Emergency Sign";
+      speak("Call cancelled");
+    });
+
+    btnConfirm.addEventListener('click', async () => {
+      if (!currentEmergencyData) return;
+      const { gesture, number } = currentEmergencyData;
+      modalOverlay.classList.remove('active');
+
+      statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">SENDING LOCATION & VOICE...</span><br>📍 Sharing your location + AI voice message...`;
+      
+      // Show voice recording
+      voiceRecording.classList.add("active");
+      
+      try {
+        await sendEmergencyLocation(gesture, number);
+      } catch (error) {
+        console.error("Error sending location:", error);
+        showToast("Warning", "Could not share location, proceeding with call", "warning");
+        
+        const serviceName = gesture.service.charAt(0).toUpperCase() + gesture.service.slice(1);
+        showWhatsAppCall(serviceName, number, gesture);
+        
+        statusText.innerHTML = `${gesture.icon} <span class="emergency-detected">CALLING ${serviceName.toUpperCase()}</span><br>📞 Dialing ${number}...`;
+        speak(`Calling ${serviceName}. ${gesture.phrase}`);
+        
+        setTimeout(() => {
+          window.location.href = `tel:${number}`;
+        }, 500);
+
+        setTimeout(() => {
+          confirmedGesture = "";
+          currentGesture = "";
+          currentEmergencyData = null;
+          callBtn.disabled = true;
+          callBtn.textContent = "📞 Make Emergency Sign";
+          statusText.textContent = "Call initiated. Make another sign if needed.";
+        }, 3000);
+      } finally {
+        voiceRecording.classList.remove("active");
+      }
+    });
+
+    callBtn.addEventListener('click', () => {
+      if (currentEmergencyData) btnConfirm.click();
+    });
+
+    // ========== LOCATION ==========
+    function getLocation() {
+      if (!("geolocation" in navigator)) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          userLocation = { lat: latitude, lng: longitude, text: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` };
+          document.getElementById("locationBadge").textContent = `📍 ${userLocation.text}`;
+          if (latitude >= 8 && latitude <= 37 && longitude >= 68 && longitude <= 97) region = "IN";
+          else if (latitude >= 24 && latitude <= 49 && longitude >= -125 && longitude <= -66) region = "US";
+          else region = "DEFAULT";
+          updateEmergencyNumbers();
+        },
+        () => { document.getElementById("locationBadge").textContent = "📍 Unavailable"; }
+      );
+    }
+
+    // ========== CAMERA ==========
+    async function enableCam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        video.srcObject = stream;
+        return new Promise((resolve) => {
+          video.addEventListener("loadeddata", () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            resolve();
+          });
+        });
+      } catch (error) {
+        debugInfo.textContent = "Camera error: " + error.message;
+      }
+    }
+
+    // ========== PWA INSTALL ==========
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBanner').classList.add('show');
+    });
+    document.getElementById('installBtn').addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('installBanner').classList.remove('show');
+    });
+    document.getElementById('dismissInstall').addEventListener('click', () => {
+      document.getElementById('installBanner').classList.remove('show');
+    });
+
+    // ========== SERVICE WORKER ==========
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW error:', err));
+    }
+
+    // ========== INITIALIZE ==========
+    window.initializeMainApp = async function() {
+      if (appInitialized) return;
+      appInitialized = true;
+      console.log("🚨 SignSOS Main App Starting...");
+      
+      await loadEmergencyNumbers();
+      updateEmergencyNumbers();
+      await findBestServer();
+      await initializeHandLandmarker();
+      await enableCam();
+      predictWebcam();
+      getLocation();
+      
+      // Preload voices
+      if ('speechSynthesis' in window) {
+        speechSynthesis.getVoices();
+        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+      }
+      
+      setInterval(checkServer, 10000);
+      
+      const contacts = getEmergencyContacts();
+      if (contacts.length > 0) {
+        setTimeout(() => {
+          showToast("Ready", `Emergency contact: ${contacts[0].name} • AI Voice enabled`, "success");
+        }, 1500);
+      }
+      
+      console.log("✅ SignSOS Ready! Gestures loaded:", Object.keys(aslGestures).length);
+    }
+
+    if (document.getElementById("mainApp").classList.contains("active")) {
+      initializeMainApp();
+    }
+  </script>
+</body>
+</html>

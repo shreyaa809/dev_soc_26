@@ -1,0 +1,237 @@
+{
+  "countries": {
+    "IN": {
+      "name": "India",
+      "code": "+91",
+      "services": {
+        "police": {
+          "number": "100",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "919999999100"
+        },
+        "ambulance": {
+          "number": "108",
+          "name": "Ambulance",
+          "icon": "🚑",
+          "whatsapp_demo": "919999999108"
+        },
+        "fire": {
+          "number": "101",
+          "name": "Fire Brigade",
+          "icon": "🚒",
+          "whatsapp_demo": "919999999101"
+        },
+        "universal": {
+          "number": "112",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "919999999112"
+        },
+        "women_helpline": {
+          "number": "1091",
+          "name": "Women Helpline",
+          "icon": "👩",
+          "whatsapp_demo": "919999991091"
+        },
+        "disaster": {
+          "number": "1078",
+          "name": "Disaster Management",
+          "icon": "🌊",
+          "whatsapp_demo": "919999991078"
+        }
+      }
+    },
+    "US": {
+      "name": "United States",
+      "code": "+1",
+      "services": {
+        "police": {
+          "number": "911",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "19999999911"
+        },
+        "ambulance": {
+          "number": "911",
+          "name": "EMS",
+          "icon": "🚑",
+          "whatsapp_demo": "19999999911"
+        },
+        "fire": {
+          "number": "911",
+          "name": "Fire Department",
+          "icon": "🚒",
+          "whatsapp_demo": "19999999911"
+        },
+        "universal": {
+          "number": "911",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "19999999911"
+        }
+      }
+    },
+    "UK": {
+      "name": "United Kingdom",
+      "code": "+44",
+      "services": {
+        "police": {
+          "number": "999",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "449999999999"
+        },
+        "ambulance": {
+          "number": "999",
+          "name": "Ambulance",
+          "icon": "🚑",
+          "whatsapp_demo": "449999999999"
+        },
+        "fire": {
+          "number": "999",
+          "name": "Fire Brigade",
+          "icon": "🚒",
+          "whatsapp_demo": "449999999999"
+        },
+        "universal": {
+          "number": "112",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "449999999112"
+        }
+      }
+    },
+    "AU": {
+      "name": "Australia",
+      "code": "+61",
+      "services": {
+        "police": {
+          "number": "000",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "619999999000"
+        },
+        "ambulance": {
+          "number": "000",
+          "name": "Ambulance",
+          "icon": "🚑",
+          "whatsapp_demo": "619999999000"
+        },
+        "fire": {
+          "number": "000",
+          "name": "Fire Brigade",
+          "icon": "🚒",
+          "whatsapp_demo": "619999999000"
+        },
+        "universal": {
+          "number": "112",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "619999999112"
+        }
+      }
+    },
+    "UAE": {
+      "name": "United Arab Emirates",
+      "code": "+971",
+      "services": {
+        "police": {
+          "number": "999",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "9719999999999"
+        },
+        "ambulance": {
+          "number": "998",
+          "name": "Ambulance",
+          "icon": "🚑",
+          "whatsapp_demo": "9719999999998"
+        },
+        "fire": {
+          "number": "997",
+          "name": "Fire Brigade",
+          "icon": "🚒",
+          "whatsapp_demo": "9719999999997"
+        },
+        "universal": {
+          "number": "112",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "9719999999112"
+        }
+      }
+    },
+    "DEFAULT": {
+      "name": "International",
+      "code": "",
+      "services": {
+        "police": {
+          "number": "112",
+          "name": "Police",
+          "icon": "🚔",
+          "whatsapp_demo": "112"
+        },
+        "ambulance": {
+          "number": "112",
+          "name": "Ambulance",
+          "icon": "🚑",
+          "whatsapp_demo": "112"
+        },
+        "fire": {
+          "number": "112",
+          "name": "Fire Brigade",
+          "icon": "🚒",
+          "whatsapp_demo": "112"
+        },
+        "universal": {
+          "number": "112",
+          "name": "Emergency",
+          "icon": "🚨",
+          "whatsapp_demo": "112"
+        }
+      }
+    }
+  },
+  "gesture_categories": {
+    "emergency_call": {
+      "description": "These gestures trigger an emergency call",
+      "gestures": [
+        "CALL_POLICE",
+        "AMBULANCE",
+        "FIRE",
+        "HELP",
+        "HOSTAGE",
+        "POSSIBLE_HOSTAGE",
+        "WEAPON_THREAT",
+        "TWO_PEOPLE_TRAPPED",
+        "STOP",
+        "SOS"
+      ]
+    },
+    "non_emergency": {
+      "description": "These gestures are informational - NO call is made",
+      "gestures": [
+        "OK",
+        "YES",
+        "NO",
+        "THANK_YOU",
+        "WAIT",
+        "I_AM_FINE"
+      ]
+    }
+  },
+  "gesture_service_mapping": {
+    "CALL_POLICE": "police",
+    "HOSTAGE": "police",
+    "POSSIBLE_HOSTAGE": "police",
+    "WEAPON_THREAT": "police",
+    "STOP": "police",
+    "HELP": "police",
+    "SOS": "universal",
+    "AMBULANCE": "ambulance",
+    "MEDICAL": "ambulance",
+    "FIRE": "fire",
+    "TWO_PEOPLE_TRAPPED": "fire"
+  }
+}

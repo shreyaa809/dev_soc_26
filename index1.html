@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>SignSOS App</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #020617;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      height: 100vh;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .app-header {
+      background: #020617;
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid #1e293b;
+      position: relative;
+    }
+
+    .app-header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .app-header span {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .location-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #1e293b;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      color: #e5e7eb;
+      border: 1px solid #334155;
+    }
+
+    .emergency-list {
+      background: #1e293b;
+      padding: 10px;
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 2px solid #020617;
+    }
+
+    .emergency-item {
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .emergency-item strong {
+      display: block;
+      font-size: 16px;
+      margin-top: 2px;
+    }
+
+    .camera-view {
+      flex: 1;
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-top: 2px solid #1e293b;
+      border-bottom: 2px solid #1e293b;
+      overflow: hidden;
+    }
+
+    video#camera {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+    }
+
+    .status {
+      background: #1e293b;
+      padding: 14px;
+      font-size: 14px;
+      min-height: 80px;
+    }
+
+    .status h3 {
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: #10b981;
+    }
+
+    .status p {
+      color: #e5e7eb;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .status .emergency-detected {
+      color: #fbbf24;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .bottom-action {
+      padding: 16px;
+      background: #020617;
+    }
+
+    .call-btn {
+      width: 100%;
+      background: #dc2626;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .call-btn:active {
+      background: #b91c1c;
+    }
+
+    .call-btn:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+
+    .note {
+      text-align: center;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #fca5a5;
+    }
+
+    .debug-info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 8px;
+      font-size: 10px;
+      border-radius: 4px;
+      z-index: 10;
+      max-width: 200px;
+    }
+
+    /* Confirmation Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 340px;
+      width: 90%;
+      border: 2px solid #fbbf24;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #fbbf24;
+      margin-bottom: 8px;
+    }
+
+    .modal-message {
+      font-size: 16px;
+      color: #e5e7eb;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .modal-details {
+      font-size: 14px;
+      color: #94a3b8;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-btn-confirm {
+      background: #dc2626;
+      color: white;
+    }
+
+    .modal-btn-confirm:active {
+      background: #b91c1c;
+      transform: scale(0.98);
+    }
+
+    .modal-btn-cancel {
+      background: #64748b;
+      color: white;
+    }
+
+    .modal-btn-cancel:active {
+      background: #475569;
+      transform: scale(0.98);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      transition: width 0.1s linear;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <div class="app-header">
+      <h1>🚨 SignSOS</h1>
+      <span>Emergency Sign Language Calling</span>
+      <div class="location-badge" id="locationBadge">📍 Locating…</div>
+    </div>
+
+    <div class="emergency-list">
+      <div class="emergency-item">Police<strong id="policeNum">100</strong></div>
+      <div class="emergency-item">Ambulance<strong id="ambulanceNum">108</strong></div>
+      <div class="emergency-item">Fire<strong id="fireNum">101</strong></div>
+      <div class="emergency-item">Universal<strong id="universalNum">112</strong></div>
+    </div>
+
+    <div class="camera-view">
+      <video id="camera" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
+      <div class="debug-info" id="debugInfo">Initializing...</div>
+    </div>
+
+    <div class="status">
+      <h3>Detected Message</h3>
+      <p id="statusText">Waiting for sign input…</p>
+      <div class="progress-bar" id="progressBar" style="display: none;">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="bottom-action">
+      <button class="call-btn" id="callBtn" disabled>📞 Make Emergency Sign</button>
+      <div class="note">Hold gesture for 2 seconds to confirm</div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon" id="modalIcon">🚨</div>
+        <div class="modal-title" id="modalTitle">Confirm Emergency Call</div>
+        <div class="modal-message" id="modalMessage">
+          <strong>HELP sign detected</strong><br>
+          Calling Police 100
+        </div>
+        <div class="modal-details" id="modalDetails">
+          📍 Location will be sent automatically
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" id="btnCancel">❌ Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btnConfirm">✅ Call Now</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { HandLandmarker, FilesetResolver, DrawingUtils } from 
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+    const statusText = document.getElementById("statusText");
+    const debugInfo = document.getElementById("debugInfo");
+    const callBtn = document.getElementById("callBtn");
+    const progressBar = document.getElementById("progressBar");
+    const progressFill = document.getElementById("progressFill");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalIcon = document.getElementById("modalIcon");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const modalDetails = document.getElementById("modalDetails");
+    const btnCancel = document.getElementById("btnCancel");
+    const btnConfirm = document.getElementById("btnConfirm");
+
+    let handLandmarker = null;
+    let drawingUtils = null;
+    let lastVideoTime = -1;
+    let currentGesture = "";
+    let confirmedGesture = "";
+    let gestureStartTime = 0;
+    let userLocation = { lat: null, lng: null, text: "Unknown" };
+    let currentEmergencyData = null;
+    const HOLD_TIME = 2000; // 2 seconds
+
+    // Emergency number configuration by region
+    const emergencyNumbers = {
+      IN: { police: "100", ambulance: "108", fire: "101", universal: "112" },
+      US: { police: "911", ambulance: "911", fire: "911", universal: "911" },
+      UK: { police: "999", ambulance: "999", fire: "999", universal: "112" },
+      EU: { police: "112", ambulance: "112", fire: "112", universal: "112" },
+      DEFAULT: { police: "112", ambulance: "112", fire: "112", universal: "112" }
+    };
+
+    let region = "IN"; // Default to India, can be detected from location
+
+    // ASL Emergency Gestures with proper descriptions
+    const aslGestures = {
+      'HELP': {
+        name: 'HELP',
+        service: 'Police',
+        icon: '🆘',
+        description: 'Fist on open palm moving upward'
+      },
+      'POLICE': {
+        name: 'POLICE',
+        service: 'Police',
+        icon: '👮',
+        description: 'C-shape tapping chest (badge area)'
+      },
+      'AMBULANCE': {
+        name: 'AMBULANCE',
+        service: 'Ambulance',
+        icon: '🚑',
+        description: 'Pulse check motion at wrist'
+      },
+      'FIRE': {
+        name: 'FIRE',
+        service: 'Fire',
+        icon: '🔥',
+        description: 'Wiggling fingers upward (flames)'
+      },
+      'DANGER': {
+        name: 'DANGER',
+        service: 'Police',
+        icon: '⚠️',
+        description: 'Closed fist'
+      },
+      'HURT': {
+        name: 'HURT',
+        service: 'Ambulance',
+        icon: '🤕',
+        description: 'Index fingers pointing at each other'
+      },
+      'SICK': {
+        name: 'SICK',
+        service: 'Ambulance',
+        icon: '🤒',
+        description: 'Middle finger on forehead'
+      },
+      'EMERGENCY': {
+        name: 'EMERGENCY',
+        service: 'Universal',
+        icon: '🚨',
+        description: 'Shaking E-handshape'
+      }
+    };
+
+    // Update emergency numbers display
+    function updateEmergencyNumbers() {
+      const nums = emergencyNumbers[region] || emergencyNumbers.DEFAULT;
+      document.getElementById("policeNum").textContent = nums.police;
+      document.getElementById("ambulanceNum").textContent = nums.ambulance;
+      document.getElementById("fireNum").textContent = nums.fire;
+      document.getElementById("universalNum").textContent = nums.universal;
+    }
+
+    // Get emergency number for service
+    function getEmergencyNumber(service) {
+      const nums = emergencyNumbers[region] || emergencyNumbers.DEFAULT;
+      switch(service) {
+        case 'Police': return nums.police;
+        case 'Ambulance': return nums.ambulance;
+        case 'Fire': return nums.fire;
+        case 'Universal': return nums.universal;
+        default: return nums.universal;
+      }
+    }
+
+    // Text-to-Speech
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel(); // Stop any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Calculate distance between two points
+    function distance(p1, p2) {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    // Calculate angle between three points
+    function angle(p1, p2, p3) {
+      const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+      const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+      const dot = v1.x * v2.x + v1.y * v2.y;
+      const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+      const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+      return Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
+    }
+
+    // Detect if finger is extended (ASL-accurate)
+    function isFingerExtended(landmarks, fingerTip, fingerMid, fingerBase) {
+      const tipToMid = distance(landmarks[fingerTip], landmarks[fingerMid]);
+      const midToBase = distance(landmarks[fingerMid], landmarks[fingerBase]);
+      const tipToBase = distance(landmarks[fingerTip], landmarks[fingerBase]);
+      
+      // Finger is extended if it's relatively straight
+      return tipToBase > (tipToMid + midToBase) * 0.85;
+    }
+
+    // ASL-accurate gesture detection
+    function detectASLGesture(landmarks) {
+      if (!landmarks || landmarks.length === 0) return null;
+
+      const lm = landmarks[0];
+      
+      // Key landmarks
+      const wrist = lm[0];
+      const thumbTip = lm[4], thumbIP = lm[3], thumbMCP = lm[2];
+      const indexTip = lm[8], indexDIP = lm[7], indexPIP = lm[6], indexMCP = lm[5];
+      const middleTip = lm[12], middleDIP = lm[11], middlePIP = lm[10], middleMCP = lm[9];
+      const ringTip = lm[16], ringDIP = lm[15], ringPIP = lm[14], ringMCP = lm[13];
+      const pinkyTip = lm[20], pinkyDIP = lm[19], pinkyPIP = lm[18], pinkyMCP = lm[17];
+
+      // Check which fingers are extended
+      const thumbExtended = isFingerExtended(lm, 4, 3, 2);
+      const indexExtended = isFingerExtended(lm, 8, 6, 5);
+      const middleExtended = isFingerExtended(lm, 12, 10, 9);
+      const ringExtended = isFingerExtended(lm, 16, 14, 13);
+      const pinkyExtended = isFingerExtended(lm, 20, 18, 17);
+
+      const fingersExtended = [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended].filter(f => f).length;
+
+      // Hand orientation
+      const palmFacingUp = middleMCP.y > middleTip.y;
+      const palmFacingCamera = Math.abs(middleMCP.z - middleTip.z) < 0.05;
+
+      // HELP: Closed fist (thumb up) on open palm - difficult in single hand, so detect fist with thumb
+      if (thumbExtended && !indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+        // Thumb up, other fingers closed (A-handshape)
+        const thumbPointingUp = thumbTip.y < thumbMCP.y;
+        if (thumbPointingUp) {
+          return 'HELP';
+        }
+      }
+
+      // POLICE: C-handshape near chest - detect curved hand
+      if (thumbExtended && fingersExtended >= 3) {
+        // Check if fingers are curved (not fully extended)
+        const indexCurved = indexTip.y > indexPIP.y - 0.02;
+        const middleCurved = middleTip.y > middlePIP.y - 0.02;
+        if (indexCurved && middleCurved) {
+          return 'POLICE';
+        }
+      }
+
+      // FIRE: Wiggling fingers upward - detect all fingers up and spread
+      if (fingersExtended === 5) {
+        // Check if fingers are spread
+        const indexMiddleSpread = Math.abs(indexTip.x - middleTip.x) > 0.05;
+        const middleRingSpread = Math.abs(middleTip.x - ringTip.x) > 0.05;
+        if (indexMiddleSpread && middleRingSpread) {
+          return 'FIRE';
+        }
+      }
+
+      // AMBULANCE: C-handshape at wrist (pulse check) - similar to POLICE but different position
+      if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+        // Three fingers forming C
+        return 'AMBULANCE';
+      }
+
+      // HURT: Index fingers pointing at each other - single hand version: index pointing
+      if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+        const indexPointingForward = Math.abs(indexTip.z - wrist.z) > 0.1;
+        if (indexPointingForward && !thumbExtended) {
+          return 'HURT';
+        }
+      }
+
+      // SICK: Middle finger on forehead - detect middle finger extended alone
+      if (middleExtended && !indexExtended && !ringExtended && !pinkyExtended) {
+        return 'SICK';
+      }
+
+      // DANGER: Closed fist (no thumb)
+      if (fingersExtended === 0) {
+        return 'DANGER';
+      }
+
+      // EMERGENCY: E-handshape (thumb across fingers) or shaka (thumb + pinky)
+      if (thumbExtended && pinkyExtended && !indexExtended && !middleExtended && !ringExtended) {
+        return 'EMERGENCY';
+      }
+
+      return null;
+    }
+
+    // Initialize MediaPipe
+    async function initializeHandLandmarker() {
+      try {
+        debugInfo.textContent = "Loading MediaPipe...";
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        
+        handLandmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 1,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+
+        drawingUtils = new DrawingUtils(ctx);
+        debugInfo.textContent = "✓ Ready - Make a sign";
+        console.log("HandLandmarker initialized successfully");
+      } catch (error) {
+        debugInfo.textContent = "Error: " + error.message;
+        console.error("Error initializing HandLandmarker:", error);
+      }
+    }
+
+    // Process video frame
+    async function predictWebcam() {
+      if (!handLandmarker) return;
+
+      const nowInMs = Date.now();
+      if (video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        
+        const results = await handLandmarker.detectForVideo(video, nowInMs);
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (results.landmarks && results.landmarks.length > 0) {
+          // Draw hand landmarks
+          for (const landmarks of results.landmarks) {
+            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
+              color: '#00FF00',
+              lineWidth: 2
+            });
+            drawingUtils.drawLandmarks(landmarks, {
+              color: '#FF0000',
+              lineWidth: 1,
+              radius: 3
+            });
+          }
+
+          // Detect ASL gesture
+          const detected = detectASLGesture(results.landmarks);
+          
+          if (detected && aslGestures[detected]) {
+            const now = Date.now();
+            
+            if (detected === currentGesture) {
+              // Same gesture held
+              const holdDuration = now - gestureStartTime;
+              const progress = Math.min(100, (holdDuration / HOLD_TIME) * 100);
+              
+              progressBar.style.display = 'block';
+              progressFill.style.width = progress + '%';
+              
+              if (holdDuration >= HOLD_TIME && detected !== confirmedGesture) {
+                confirmedGesture = detected;
+                const gesture = aslGestures[detected];
+                const number = getEmergencyNumber(gesture.service);
+                
+                // Show confirmation modal
+                showConfirmationModal(gesture, number);
+                
+                debugInfo.textContent = `✓ ${detected} confirmed!`;
+                progressBar.style.display = 'none';
+              } else {
+                debugInfo.textContent = `Hold ${detected}: ${progress.toFixed(0)}%`;
+                statusText.innerHTML = `${aslGestures[detected].icon} <span class="emergency-detected">${detected} sign detected</span><br>Hold steady to confirm...`;
+              }
+            } else {
+              // New gesture detected
+              currentGesture = detected;
+              gestureStartTime = now;
+              progressBar.style.display = 'block';
+              progressFill.style.width = '0%';
+              debugInfo.textContent = `Detecting: ${detected}...`;
+              statusText.innerHTML = `${aslGestures[detected].icon} Detecting ${detected}...<br>Hold for 2 seconds`;
+            }
+          } else {
+            if (currentGesture) {
+              // Lost the gesture
+              currentGesture = "";
+              progressBar.style.display = 'none';
+              debugInfo.textContent = "Hand detected";
+              if (!confirmedGesture) {
+                statusText.textContent = "Hand detected - make an emergency sign";
+              }
+            }
+          }
+        } else {
+          currentGesture = "";
+          progressBar.style.display = 'none';
+          debugInfo.textContent = "No hand detected";
+          if (!confirmedGesture) {
+            statusText.textContent = "Waiting for sign input…";
+          }
+        }
+      }
+
+      requestAnimationFrame(predictWebcam);
+    }
+
+    // Show confirmation modal
+    function showConfirmationModal(gesture, number) {
+      currentEmergencyData = { gesture, number };
+      
+      modalIcon.textContent = gesture.icon;
+      modalTitle.textContent = "Confirm Emergency Call";
+      modalMessage.innerHTML = `
+        <strong>${gesture.name} sign detected</strong><br>
+        Calling ${gesture.service}: ${number}
+      `;
+      modalDetails.innerHTML = `
+        📍 ${userLocation.text}<br>
+        🕐 ${new Date().toLocaleTimeString()}
+      `;
+      
+      modalOverlay.classList.add('active');
+      callBtn.disabled = false;
+      callBtn.textContent = "📞 Confirm Emergency Call";
+      
+      statusText.innerHTML = `
+        ${gesture.icon} <span class="emergency-detected">${gesture.name} sign detected!</span><br>
+        → Calling ${gesture.service} ${number}
+      `;
+      
+      speak(`${gesture.name} sign detected. Ready to call ${gesture.service} at ${number}. Confirm to proceed.`);
+    }
+
+    // Cancel button
+    btnCancel.addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+      confirmedGesture = "";
+      currentGesture = "";
+      currentEmergencyData = null;
+      statusText.textContent = "Call cancelled. Make another sign if needed.";
+      callBtn.disabled = true;
+      callBtn.textContent = "📞 Make Emergency Sign";
+      speak("Call cancelled");
+    });
+
+    // Confirm button - Place actual call
+    btnConfirm.addEventListener('click', () => {
+      if (currentEmergencyData) {
+        const { gesture, number } = currentEmergencyData;
+        
+        modalOverlay.classList.remove('active');
+        
+        // In a real app, this would initiate the actual emergency call
+        statusText.innerHTML = `
+          ${gesture.icon} <span class="emergency-detected">CALLING ${gesture.service.toUpperCase()}</span><br>
+          📞 Dialing ${number}...<br>
+          📍 Location: ${userLocation.text}
+        `;
+        
+        speak(`Calling ${gesture.service} at ${number}. Emergency services have been notified. Your location has been sent.`);
+        
+        // Simulate call (in real app, use tel: protocol or API)
+        setTimeout(() => {
+          alert(`Emergency Call Initiated\n\nService: ${gesture.service}\nNumber: ${number}\nSign: ${gesture.name}\nLocation: ${userLocation.text}\n\nIn a real emergency, this would dial ${number} and send your location automatically.`);
+          
+          // Reset after call
+          confirmedGesture = "";
+          currentGesture = "";
+          currentEmergencyData = null;
+          callBtn.disabled = true;
+          callBtn.textContent = "📞 Make Emergency Sign";
+          statusText.textContent = "Call completed. Make another sign if needed.";
+        }, 2000);
+      }
+    });
+
+    // Manual call button
+    callBtn.addEventListener('click', () => {
+      if (currentEmergencyData) {
+        btnConfirm.click();
+      }
+    });
+
+    // Get user location
+    function getLocation() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            userLocation = {
+              lat: latitude,
+              lng: longitude,
+              text: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+            };
+            document.getElementById("locationBadge").textContent = `📍 ${userLocation.text}`;
+            
+            // Detect region from coordinates (simplified)
+            // In real app, use reverse geocoding API
+            if (latitude >= 8 && latitude <= 37 && longitude >= 68 && longitude <= 97) {
+              region = "IN";
+            } else if (latitude >= 24 && latitude <= 49 && longitude >= -125 && longitude <= -66) {
+              region = "US";
+            } else if (latitude >= 50 && latitude <= 59 && longitude >= -8 && longitude <= 2) {
+              region = "UK";
+            } else {
+              region = "EU";
+            }
+            
+            updateEmergencyNumbers();
+          },
+          (error) => {
+            document.getElementById("locationBadge").textContent = "📍 Location unavailable";
+            userLocation.text = "Location unavailable";
+          }
+        );
+      }
+    }
+
+    // Start camera
+    async function enableCam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 640, height: 480 },
+          audio: false
+        });
+        
+        video.srcObject = stream;
+        video.addEventListener("loadeddata", () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          predictWebcam();
+        });
+      } catch (error) {
+        debugInfo.textContent = "Camera error: " + error.message;
+        console.error("Error accessing camera:", error);
+      }
+    }
+
+    // Initialize app
+    async function init() {
+      updateEmergencyNumbers();
+      await initializeHandLandmarker();
+      await enableCam();
+      getLocation();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
